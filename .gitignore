@@ -1,0 +1,6 @@
+# Ignore virtual environment
+disease_approximation_env/
+
+documentation/
+__pycache__/
+__init__.py

@@ -1,0 +1,6 @@
+Flask==3.0.3
+Flask-RESTful==0.3.10
+Flask-Cors==3.0.10
+requests==2.31.0
+h5py==3.8.0
+flask-restx==0.5.1
