@@ -62,6 +62,19 @@ def compute_diff_cell_abundance(adata, keyword, dataset_id):
     
     return convert_to_python_types(result)
 
+
+"""
+    Computes the differential cell type abundance for a given dataset.
+
+    Parameters:
+        adata (AnnData): data obtained from scquill
+        keyword (str): Keyword to filter diseases.
+        dataset_id (str): Identifier for the dataset.
+
+    Returns:
+        result (list): List of dictionaries containing the computed results.
+"""
+
 def compute_diff_expression(adata, keyword, dataset_id, N, cell_type_keyword):
     expression_data = adata.layers['average']
     fraction_data = adata.layers['fraction']
@@ -88,7 +101,7 @@ def compute_diff_expression(adata, keyword, dataset_id, N, cell_type_keyword):
             frac_disease = fraction_data[disease_idx, :]
 
             log2_fc = np.log2((expr_disease + 1) / (expr_normal + 1))
-
+            
             if N >= log2_fc.shape[0]:
                 N = log2_fc.shape[0] - 1
 

@@ -1,16 +1,32 @@
+import os
+from dotenv import load_dotenv
+from google.cloud import storage
 import scquill
 
-# Initialize the scquill Approximation object and read the HDF5 file to obtain the AnnData object
-# https://github.com/fabilab/scquill/tree/main
+load_dotenv()
+
+def download_blob(bucket_name, source_blob_name, destination_file_name):
+    #  Downloads a blob from the bucket if it does not already exist locally.
+    if not os.path.exists(destination_file_name):
+        storage_client = storage.Client(project=os.getenv('GOOGLE_CLOUD_PROJECT'))
+        bucket = storage_client.bucket(bucket_name)
+        blob = bucket.blob(source_blob_name)
+        blob.download_to_filename(destination_file_name)
+
 def process_h5_file(file_path, keyword, compute_func, *args):
-    print(file_path)
+    # Assuming `file_path` is the path in the cloud storage bucket
+    bucket_name = os.getenv('GOOGLE_CLOUD_BUCKET')
+    local_path = f'/tmp/{os.path.basename(file_path)}'
+    # TO DO: since /tmp will be cleaned up after 10 days, need to check if the file exist, only download if it doesn't
+    download_blob(bucket_name, file_path, local_path)
+    
+    # Continue processing the local file
     app = scquill.Approximation()
-    app = app.read_h5(file_path)
+    app = app.read_h5(local_path)
     adata = app.to_anndata(groupby=('cell_type', 'disease'))
     
-    # filter out datasets that don't contain the user keyword in the disease column
     if adata.obs[adata.obs['disease'].str.contains(keyword, case=False)].empty:
         return None
     
-    dataset_id = file_path.split('/')[-1].replace('.h5', '')
+    dataset_id = os.path.basename(file_path).replace('.h5', '')
     return compute_func(adata, keyword, dataset_id, *args)

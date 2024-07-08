@@ -4,3 +4,8 @@ disease_approximation_env/
 documentation/
 __pycache__/
 __init__.py
+
+.env
+
+app.yaml
+data/

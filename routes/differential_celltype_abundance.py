@@ -1,25 +1,31 @@
-# routes/differential_celltype_abundance.py
-
-from flask import Blueprint, request, jsonify, Response
-import os
+from flask import Blueprint, request, Response
+from dotenv import load_dotenv
+from google.cloud import storage
 from utils.file_handling import process_h5_file
 from utils.data_preprocessing import compute_diff_cell_abundance
 import json
+import os
+
+load_dotenv()
 
 diff_celltype_abundance_bp = Blueprint('differential_celltype_abundance', __name__)
 
 @diff_celltype_abundance_bp.route('/differential_cell_type_abundance', methods=['GET'])
 def differential_cell_type_abundance():
     disease_keyword = request.args.get('keyword', default='', type=str)
-    h5_files_directory = './data/h5_files_human'
+    h5_files_directory = ''  # Directory in the cloud storage bucket
     
     all_results = []
-    for file_name in os.listdir(h5_files_directory):
-        if file_name.endswith('.h5'):
-            file_path = os.path.join(h5_files_directory, file_name)
-            result = process_h5_file(file_path, disease_keyword, compute_diff_cell_abundance)
+    # List all files in the bucket directory
+    storage_client = storage.Client(project=os.getenv('GOOGLE_CLOUD_PROJECT'))
+    blobs = storage_client.list_blobs(os.getenv('GOOGLE_CLOUD_BUCKET'), prefix=h5_files_directory)
+    
+    for blob in blobs:
+        if blob.name.endswith('.h5'):
+            result = process_h5_file(blob.name, disease_keyword, compute_diff_cell_abundance)
             if result is not None:
                 all_results.extend(result)
+    
     
     # return jsonify(all_results)
     # Convert the list of OrderedDict to JSON string to preserve the order
