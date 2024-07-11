@@ -13,4 +13,9 @@ app.register_blueprint(diff_celltype_abundance_bp)
 app.register_blueprint(diff_gene_expression_bp)
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', debug=False)
+    # when running locally use 127.0.0.1
+    host = '127.0.0.1'
+    # when deployment, use 0.0.0.0
+    # host = '0.0.0.0
+    
+    app.run(host=host, debug=True)

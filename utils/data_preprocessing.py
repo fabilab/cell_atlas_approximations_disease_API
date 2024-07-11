@@ -37,7 +37,6 @@ def compute_diff_cell_abundance(adata, keyword, dataset_id):
     filtered_obs = df_obs[df_obs['disease'].str.contains(keyword, case=False) | (df_obs['disease'] == 'normal')]
     disease_name = filtered_obs[filtered_obs['disease'].str.contains(keyword, case=False)]['disease'].unique()[0]
     result = []
-    total_split_counts = filtered_obs.groupby('disease')['cell_count'].sum().to_dict()
     
     for cell_type in filtered_obs.cell_type.unique():
         normal_count = filtered_obs[(filtered_obs["cell_type"] == cell_type) & (filtered_obs["disease"] == 'normal')]["cell_count"].sum()
@@ -52,6 +51,8 @@ def compute_diff_cell_abundance(adata, keyword, dataset_id):
             ("disease", disease_name),
             ("dataset_id", dataset_id),
             ("cell_type", cell_type),
+            ("condition", "not normal"),
+            ("condition_baseline", "normal"),
             ("normal_count", normal_count),
             ("disease_count", disease_count),
             ("total_count", total_count),
@@ -99,17 +100,21 @@ def compute_diff_expression(adata, keyword, dataset_id, N, cell_type_keyword):
             expr_disease = expression_data[disease_idx, :]
             frac_normal = fraction_data[normal_idx, :]
             frac_disease = fraction_data[disease_idx, :]
+            delta_fraction = frac_disease - frac_normal
 
             log2_fc = np.log2((expr_disease + 1) / (expr_normal + 1))
             
             if N >= log2_fc.shape[0]:
                 N = log2_fc.shape[0] - 1
 
-            top_up_indices = np.argsort(log2_fc)[-N:][::-1]
-            top_down_indices = np.argsort(log2_fc)[:N]
+            # Sort by delta fraction
+            top_up_indices = np.argsort(delta_fraction)[-N:][::-1]
+            top_down_indices = np.argsort(delta_fraction)[:N]
 
-            for idx in top_up_indices.tolist() + top_down_indices.tolist():
-                regulation = 'up' if log2_fc[idx] > 0 else 'down'
+            # Combine up and down indices with regulation labels
+            combined_indices = [(idx, 'up') for idx in top_up_indices] + [(idx, 'down') for idx in top_down_indices]
+
+            for idx, regulation in combined_indices:
                 result.append(OrderedDict([
                     ("disease", disease_name),
                     ("dataset_id", dataset_id),
@@ -117,12 +122,14 @@ def compute_diff_expression(adata, keyword, dataset_id, N, cell_type_keyword):
                     ("cell_type", cell_type),
                     ("regulation", regulation),
                     ("feature_name", adata.var_names[idx]),
+                    # ("unit", unit),
                     ("expr_normal", expr_normal[idx]),
                     ("expr_disease", expr_disease[idx]),
+                    #  need to check the original data's unit, if it's already log
+                    ("log2_fc", log2_fc[idx]),
                     ("frac_normal", frac_normal[idx]),
                     ("frac_disease", frac_disease[idx]),
-                    ("log2_fc", log2_fc[idx]),
-                    ("delta_change", (expr_disease[idx] - expr_normal[idx]))
+                    ("delta_fraction", delta_fraction[idx])
                 ]))
 
     return convert_to_python_types(result)

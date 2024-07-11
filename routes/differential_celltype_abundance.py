@@ -13,7 +13,7 @@ diff_celltype_abundance_bp = Blueprint('differential_celltype_abundance', __name
 @diff_celltype_abundance_bp.route('/differential_cell_type_abundance', methods=['GET'])
 def differential_cell_type_abundance():
     disease_keyword = request.args.get('keyword', default='', type=str)
-    h5_files_directory = ''  # Directory in the cloud storage bucket
+    h5_files_directory = 'compressed_data/h_sapiens/'  # Directory in the cloud storage bucket
     
     all_results = []
     # List all files in the bucket directory

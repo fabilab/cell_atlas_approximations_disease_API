@@ -17,7 +17,6 @@ def process_h5_file(file_path, keyword, compute_func, *args):
     # Assuming `file_path` is the path in the cloud storage bucket
     bucket_name = os.getenv('GOOGLE_CLOUD_BUCKET')
     local_path = f'/tmp/{os.path.basename(file_path)}'
-    # TO DO: since /tmp will be cleaned up after 10 days, need to check if the file exist, only download if it doesn't
     download_blob(bucket_name, file_path, local_path)
     
     # Continue processing the local file
