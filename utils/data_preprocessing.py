@@ -26,38 +26,39 @@ def convert_to_python_types(result):
 
     Parameters:
         adata (AnnData): data obtained from scquill
-        keyword (str): Keyword to filter diseases.
+        disease_keyword (str): Keyword to filter diseases.
         dataset_id (str): Identifier for the dataset.
 
     Returns:
         result (list): List of dictionaries containing the computed results.
 """
-def compute_diff_cell_abundance(adata, keyword, dataset_id):
+def compute_diff_cell_abundance(adata, disease_keyword, dataset_id):
     df_obs = adata.obs
-    filtered_obs = df_obs[df_obs['disease'].str.contains(keyword, case=False) | (df_obs['disease'] == 'normal')]
-    disease_name = filtered_obs[filtered_obs['disease'].str.contains(keyword, case=False)]['disease'].unique()[0]
+    filtered_obs = df_obs[df_obs['disease'].str.contains(disease_keyword, case=False) | (df_obs['disease'] == 'normal')]
+    disease_name = filtered_obs[filtered_obs['disease'].str.contains(disease_keyword, case=False)]['disease'].unique()[0]
     result = []
     
     for cell_type in filtered_obs.cell_type.unique():
         normal_count = filtered_obs[(filtered_obs["cell_type"] == cell_type) & (filtered_obs["disease"] == 'normal')]["cell_count"].sum()
         disease_count = filtered_obs[(filtered_obs["cell_type"] == cell_type) & (filtered_obs["disease"] != 'normal')]["cell_count"].sum()
         total_count = normal_count + disease_count
-        normal_pct = (normal_count / total_count) * 100
-        disease_pct = (disease_count / total_count) * 100
-        delta_fraction = disease_pct - normal_pct
+        normal_fraction = normal_count / total_count
+        disease_fraction = disease_count / total_count
+        delta_fraction = disease_fraction - normal_fraction
 
         # OrderedDict is used to ensure the dictionary is shown in the same order as defined
         result.append(OrderedDict([
             ("disease", disease_name),
             ("dataset_id", dataset_id),
             ("cell_type", cell_type),
+            ("comparison", "disease vs. normal"),
             ("condition", "not normal"),
             ("condition_baseline", "normal"),
             ("normal_count", normal_count),
             ("disease_count", disease_count),
             ("total_count", total_count),
-            ("normal_pct", normal_pct),
-            ("disease_pct", disease_pct),
+            ("normal_fraction", normal_fraction),
+            ("disease_fraction", disease_fraction),
             ("delta_fraction", delta_fraction)
         ]))
     
@@ -76,14 +77,16 @@ def compute_diff_cell_abundance(adata, keyword, dataset_id):
         result (list): List of dictionaries containing the computed results.
 """
 
-def compute_diff_expression(adata, keyword, dataset_id, N, cell_type_keyword):
+def compute_diff_expression(adata, disease_keyword, dataset_id, metadata, N, cell_type_keyword):
     expression_data = adata.layers['average']
     fraction_data = adata.layers['fraction']
-    filtered_obs = adata.obs[adata.obs['disease'].str.contains(keyword, case=False) | (adata.obs['disease'] == 'normal')]
-    disease_name = filtered_obs[filtered_obs['disease'].str.contains(keyword, case=False)]['disease'].unique()[0]  # Extract the disease name
+    filtered_obs = adata.obs[adata.obs['disease'].str.contains(disease_keyword, case=False) | (adata.obs['disease'] == 'normal')]
+    disease_name = filtered_obs[filtered_obs['disease'].str.contains(disease_keyword, case=False)]['disease'].unique()[0]  # Extract the disease name
     cell_types = filtered_obs['cell_type'].unique()
     disease_status = filtered_obs['disease'].unique()
-
+    unit = metadata['unit']
+    log_transformed = metadata['log_transformed']
+    
     result = []
     for cell_type in cell_types:
         if cell_type_keyword.lower() not in cell_type.lower():
@@ -96,14 +99,14 @@ def compute_diff_expression(adata, keyword, dataset_id, N, cell_type_keyword):
             normal_idx = np.where((filtered_obs['cell_type'] == cell_type) & (filtered_obs['disease'] == 'normal'))[0][0]
             disease_idx = np.where((filtered_obs['cell_type'] == cell_type) & (filtered_obs['disease'] == status))[0][0]
 
-            expr_normal = expression_data[normal_idx, :]
-            expr_disease = expression_data[disease_idx, :]
-            frac_normal = fraction_data[normal_idx, :]
-            frac_disease = fraction_data[disease_idx, :]
-            delta_fraction = frac_disease - frac_normal
+            normal_expr = expression_data[normal_idx, :]
+            disease_expr = expression_data[disease_idx, :]
+            normal_fraction = fraction_data[normal_idx, :]
+            disease_fraction = fraction_data[disease_idx, :]
+            delta_fraction = disease_fraction - normal_fraction
 
-            log2_fc = np.log2((expr_disease + 1) / (expr_normal + 1))
-            
+            log2_fc = np.log2((disease_expr + 1) / (normal_expr + 1))
+
             if N >= log2_fc.shape[0]:
                 N = log2_fc.shape[0] - 1
 
@@ -118,17 +121,18 @@ def compute_diff_expression(adata, keyword, dataset_id, N, cell_type_keyword):
                 result.append(OrderedDict([
                     ("disease", disease_name),
                     ("dataset_id", dataset_id),
-                    ("condition", status),
                     ("cell_type", cell_type),
+                    ("comparison", "disease vs. normal"),
+                    ("condition", "not normal"),
+                    ("condition_baseline", "normal"),
                     ("regulation", regulation),
                     ("feature_name", adata.var_names[idx]),
-                    # ("unit", unit),
-                    ("expr_normal", expr_normal[idx]),
-                    ("expr_disease", expr_disease[idx]),
-                    #  need to check the original data's unit, if it's already log
+                    ("unit", unit),
+                    ("normal_expr", normal_expr[idx]),
+                    ("disease_expr", disease_expr[idx]),
                     ("log2_fc", log2_fc[idx]),
-                    ("frac_normal", frac_normal[idx]),
-                    ("frac_disease", frac_disease[idx]),
+                    ("normal_fraction", normal_fraction[idx]),
+                    ("disease_fraction", disease_fraction[idx]),
                     ("delta_fraction", delta_fraction[idx])
                 ]))
 

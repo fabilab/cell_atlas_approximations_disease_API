@@ -18,4 +18,4 @@ if __name__ == '__main__':
     # when deployment, use 0.0.0.0
     # host = '0.0.0.0
     
-    app.run(host=host, debug=True)
+    app.run(host=host, debug=False)

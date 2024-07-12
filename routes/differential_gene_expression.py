@@ -13,7 +13,7 @@ diff_gene_expression_bp = Blueprint('differential_gene_expression', __name__)
 
 @diff_gene_expression_bp.route('/differential_gene_expression', methods=['GET'])
 def differential_gene_expression():
-    disease_keyword = request.args.get('keyword', default='', type=str)
+    disease_keyword = request.args.get('disease_keyword', default='', type=str)
     cell_type_keyword = request.args.get('cell_type', default='', type=str)
     top_n = int(request.args.get('top_n', default=10, type=int))
     h5_files_directory = 'compressed_data/h_sapiens/'  # Directory in the cloud storage bucket
