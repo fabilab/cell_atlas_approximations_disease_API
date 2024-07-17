@@ -80,13 +80,26 @@ def compute_diff_cell_abundance(adata, disease_keyword, dataset_id):
 def compute_diff_expression(adata, disease_keyword, dataset_id, metadata, N, cell_type_keyword):
     expression_data = adata.layers['average']
     fraction_data = adata.layers['fraction']
+    
+    # Set numerical indices on the original adata.obs
+    adata.obs['numerical_index'] = np.arange(adata.obs.shape[0])
+    
+    # Filter the obs to only include rows with the disease_keyword or 'normal'
     filtered_obs = adata.obs[adata.obs['disease'].str.contains(disease_keyword, case=False) | (adata.obs['disease'] == 'normal')]
-    disease_name = filtered_obs[filtered_obs['disease'].str.contains(disease_keyword, case=False)]['disease'].unique()[0]  # Extract the disease name
+    disease_name = filtered_obs[filtered_obs['disease'].str.contains(disease_keyword, case=False)]['disease'].unique()[0]
+    
+    # Convert filtered_obs['numerical_index'] to a numpy array of integer indices
+    integer_indices = filtered_obs['numerical_index'].to_numpy()
+
+    # Filter the expression and fraction data using the filtered observations' integer indices
+    filtered_expression_data = expression_data[integer_indices, :]
+    filtered_fraction_data = fraction_data[integer_indices, :]
+    
     cell_types = filtered_obs['cell_type'].unique()
     disease_status = filtered_obs['disease'].unique()
     unit = metadata['unit']
     log_transformed = metadata['log_transformed']
-    
+
     result = []
     for cell_type in cell_types:
         if cell_type_keyword.lower() not in cell_type.lower():
@@ -96,17 +109,23 @@ def compute_diff_expression(adata, disease_keyword, dataset_id, metadata, N, cel
             if status == 'normal':
                 continue
 
-            normal_idx = np.where((filtered_obs['cell_type'] == cell_type) & (filtered_obs['disease'] == 'normal'))[0][0]
-            disease_idx = np.where((filtered_obs['cell_type'] == cell_type) & (filtered_obs['disease'] == status))[0][0]
+            # Get the numerical indices for normal and disease
+            normal_idx = filtered_obs[(filtered_obs['cell_type'] == cell_type) & (filtered_obs['disease'] == 'normal')]['numerical_index'].values[0]
+            disease_idx = filtered_obs[(filtered_obs['cell_type'] == cell_type) & (filtered_obs['disease'] == status)]['numerical_index'].values[0]
 
-            normal_expr = expression_data[normal_idx, :]
-            disease_expr = expression_data[disease_idx, :]
-            normal_fraction = fraction_data[normal_idx, :]
-            disease_fraction = fraction_data[disease_idx, :]
+            # Ensure normal_idx and disease_idx are within bounds
+            if normal_idx >= len(filtered_expression_data) or disease_idx >= len(filtered_expression_data):
+                continue
+
+            normal_expr = filtered_expression_data[normal_idx, :]
+            disease_expr = filtered_expression_data[disease_idx, :]
+            normal_fraction = filtered_fraction_data[normal_idx, :]
+            disease_fraction = filtered_fraction_data[disease_idx, :]
             delta_fraction = disease_fraction - normal_fraction
 
             log2_fc = np.log2((disease_expr + 1) / (normal_expr + 1))
 
+            # ensure top_n does not exceed the number of features
             if N >= log2_fc.shape[0]:
                 N = log2_fc.shape[0] - 1
 
@@ -130,10 +149,29 @@ def compute_diff_expression(adata, disease_keyword, dataset_id, metadata, N, cel
                     ("unit", unit),
                     ("normal_expr", normal_expr[idx]),
                     ("disease_expr", disease_expr[idx]),
+                    ("log_transformed", log_transformed),
                     ("log2_fc", log2_fc[idx]),
                     ("normal_fraction", normal_fraction[idx]),
                     ("disease_fraction", disease_fraction[idx]),
                     ("delta_fraction", delta_fraction[idx])
                 ]))
+
+    return convert_to_python_types(result)
+
+
+def get_metadata(disease_keyword, metadata):
+    
+    result = []
+    for disease, unique_id in zip(metadata['diseases'], metadata['unique_ids']):
+        if disease_keyword.lower() in disease.decode('utf-8').lower():
+            result.append(OrderedDict([
+                ('unique_id', unique_id.decode('utf-8')),
+                ('disease', disease.decode('utf-8')),
+                ('cell_type_number', len(metadata['cell_types'])),
+                ('dataset_id', metadata['dataset_id']),
+                ('unit', metadata['unit'].decode('utf-8') if isinstance(metadata['unit'], bytes) else metadata['unit']),
+                ('log_transformed', metadata['log_transformed']),
+                ('has_normal_baseline', metadata['has_normal_baseline'])
+            ]))
 
     return convert_to_python_types(result)

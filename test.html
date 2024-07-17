@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>POST Request Test</title>
+</head>
+<body>
+    <label for="disease_keyword">Disease Keyword:</label>
+    <input type="text" id="disease_keyword" value="flu">
+    <button onclick="sendPostRequest()">Submit</button>
+
+    <pre id="result"></pre>
+
+    <script>
+        async function sendPostRequest() {
+            const disease_keyword = document.getElementById('disease_keyword').value;
+            const response = await fetch('http://127.0.0.1:5000/differential_cell_type_abundance', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ disease_keyword }),
+            });
+            const result = await response.json();
+            console.log(result);
+            document.getElementById('result').innerText = JSON.stringify(result, null, 2);
+        }
+    </script>
+</body>
+</html>
