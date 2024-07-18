@@ -1,8 +1,13 @@
 # utils/data_processing.py
 
+import json
+import os
+from dotenv import load_dotenv
 import numpy as np
 import pandas as pd
 from collections import OrderedDict
+
+load_dotenv()
 
 """
 result (list): List of dictionaries containing results.
@@ -77,13 +82,13 @@ def compute_diff_cell_abundance(adata, disease_keyword, dataset_id):
         result (list): List of dictionaries containing the computed results.
 """
 
-def compute_diff_expression(adata, disease_keyword, dataset_id, metadata, N, cell_type_keyword):
+def compute_diff_expression(adata, disease_keyword, dataset_id, unit, log_transformed, N, cell_type_keyword):
     expression_data = adata.layers['average']
     fraction_data = adata.layers['fraction']
     
     # Set numerical indices on the original adata.obs
     adata.obs['numerical_index'] = np.arange(adata.obs.shape[0])
-    
+    # print(adata.obs)
     # Filter the obs to only include rows with the disease_keyword or 'normal'
     filtered_obs = adata.obs[adata.obs['disease'].str.contains(disease_keyword, case=False) | (adata.obs['disease'] == 'normal')]
     disease_name = filtered_obs[filtered_obs['disease'].str.contains(disease_keyword, case=False)]['disease'].unique()[0]
@@ -97,9 +102,6 @@ def compute_diff_expression(adata, disease_keyword, dataset_id, metadata, N, cel
     
     cell_types = filtered_obs['cell_type'].unique()
     disease_status = filtered_obs['disease'].unique()
-    unit = metadata['unit']
-    log_transformed = metadata['log_transformed']
-
     result = []
     for cell_type in cell_types:
         if cell_type_keyword.lower() not in cell_type.lower():
@@ -110,8 +112,15 @@ def compute_diff_expression(adata, disease_keyword, dataset_id, metadata, N, cel
                 continue
 
             # Get the numerical indices for normal and disease
-            normal_idx = filtered_obs[(filtered_obs['cell_type'] == cell_type) & (filtered_obs['disease'] == 'normal')]['numerical_index'].values[0]
-            disease_idx = filtered_obs[(filtered_obs['cell_type'] == cell_type) & (filtered_obs['disease'] == status)]['numerical_index'].values[0]
+            cell_type_in_normal = filtered_obs[(filtered_obs['cell_type'] == cell_type) & (filtered_obs['disease'] == 'normal')]['numerical_index']
+            cell_type_in_disease = filtered_obs[(filtered_obs['cell_type'] == cell_type) & (filtered_obs['disease'] == status)]['numerical_index']
+            
+            # cell type missing in either normal or disease condition will not be eligible for differential expression
+            if len(cell_type_in_normal) == 0 or len(cell_type_in_disease) == 0:
+                continue
+            
+            normal_idx = cell_type_in_normal.values[0]
+            disease_idx = cell_type_in_disease.values[0]
 
             # Ensure normal_idx and disease_idx are within bounds
             if normal_idx >= len(filtered_expression_data) or disease_idx >= len(filtered_expression_data):
@@ -159,19 +168,32 @@ def compute_diff_expression(adata, disease_keyword, dataset_id, metadata, N, cel
     return convert_to_python_types(result)
 
 
-def get_metadata(disease_keyword, metadata):
+def get_metadata(disease_keyword='', unique_id_list=[]):
     
     result = []
-    for disease, unique_id in zip(metadata['diseases'], metadata['unique_ids']):
-        if disease_keyword.lower() in disease.decode('utf-8').lower():
-            result.append(OrderedDict([
-                ('unique_id', unique_id.decode('utf-8')),
-                ('disease', disease.decode('utf-8')),
-                ('cell_type_number', len(metadata['cell_types'])),
-                ('dataset_id', metadata['dataset_id']),
-                ('unit', metadata['unit'].decode('utf-8') if isinstance(metadata['unit'], bytes) else metadata['unit']),
-                ('log_transformed', metadata['log_transformed']),
-                ('has_normal_baseline', metadata['has_normal_baseline'])
-            ]))
+    with open(os.getenv('MANIFEST_FILE'), 'r') as f:
+        manifest = json.load(f)
+    
+    for dataset_id in manifest:
+        metadata = manifest[dataset_id]
+        if 'diseases' in metadata:
+            for unique_id, disease in zip(metadata['ids'], metadata['diseases']):
+                item = {
+                    'unique_id': unique_id,
+                    'disease': disease,
+                    'cell_type_number': len(metadata['cell_types']),
+                    'dataset_id': dataset_id, 
+                    'collection_name': metadata['collection_name'],
+                    'unit': metadata['unit'],
+                    'log_transformed': metadata['log_transformed'],
+                    'has_normal_baseline': metadata['has_normal_baseline']
+                }
+                if len(unique_id_list) > 0 and unique_id_list[0] != '':
+                    if unique_id in unique_id_list:
+                        result.append(item)
+                else:
+                    if disease_keyword.lower() in disease.lower():
+                        result.append(item)
+                
 
     return convert_to_python_types(result)
