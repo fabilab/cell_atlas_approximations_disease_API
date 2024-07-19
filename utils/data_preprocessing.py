@@ -88,7 +88,7 @@ def compute_diff_expression(adata, disease_keyword, dataset_id, unit, log_transf
     
     # Set numerical indices on the original adata.obs
     adata.obs['numerical_index'] = np.arange(adata.obs.shape[0])
-    # print(adata.obs)
+    
     # Filter the obs to only include rows with the disease_keyword or 'normal'
     filtered_obs = adata.obs[adata.obs['disease'].str.contains(disease_keyword, case=False) | (adata.obs['disease'] == 'normal')]
     disease_name = filtered_obs[filtered_obs['disease'].str.contains(disease_keyword, case=False)]['disease'].unique()[0]
@@ -121,6 +121,10 @@ def compute_diff_expression(adata, disease_keyword, dataset_id, unit, log_transf
             
             normal_idx = cell_type_in_normal.values[0]
             disease_idx = cell_type_in_disease.values[0]
+
+            # Map the original indices to the filtered data indices
+            normal_idx = np.where(integer_indices == normal_idx)[0][0]
+            disease_idx = np.where(integer_indices == disease_idx)[0][0]
 
             # Ensure normal_idx and disease_idx are within bounds
             if normal_idx >= len(filtered_expression_data) or disease_idx >= len(filtered_expression_data):
@@ -166,7 +170,6 @@ def compute_diff_expression(adata, disease_keyword, dataset_id, unit, log_transf
                 ]))
 
     return convert_to_python_types(result)
-
 
 def get_metadata(disease_keyword='', unique_id_list=[]):
     
