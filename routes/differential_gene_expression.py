@@ -15,7 +15,7 @@ diff_gene_expression_bp = Blueprint('differential_gene_expression', __name__)
 def differential_gene_expression():
     disease_keyword = request.args.get('disease_keyword', default='', type=str)
     id_list = request.args.get('unique_ids', default='', type=str) # comma-separated unique ids
-    cell_type_keyword = request.args.get('cell_type', default='', type=str)
+    cell_type_keyword = request.args.get('cell_type_keyword', default='', type=str)
     top_n = int(request.args.get('top_n', default=10, type=int))
     
     matching_datasets = get_metadata(disease_keyword, id_list.split(','))

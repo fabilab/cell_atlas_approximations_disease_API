@@ -91,6 +91,15 @@ def compute_diff_expression(adata, disease_keyword, dataset_id, unit, log_transf
     
     # Filter the obs to only include rows with the disease_keyword or 'normal'
     filtered_obs = adata.obs[adata.obs['disease'].str.contains(disease_keyword, case=False) | (adata.obs['disease'] == 'normal')]
+    
+    # If a cell type keyword is given, filter further
+
+    if cell_type_keyword:
+        filtered_obs = filtered_obs[filtered_obs['cell_type'].str.contains(cell_type_keyword, case=False)]
+    
+    if filtered_obs.empty:
+        return []
+    
     disease_name = filtered_obs[filtered_obs['disease'].str.contains(disease_keyword, case=False)]['disease'].unique()[0]
     
     # Convert filtered_obs['numerical_index'] to a numpy array of integer indices
@@ -103,9 +112,8 @@ def compute_diff_expression(adata, disease_keyword, dataset_id, unit, log_transf
     cell_types = filtered_obs['cell_type'].unique()
     disease_status = filtered_obs['disease'].unique()
     result = []
+    
     for cell_type in cell_types:
-        if cell_type_keyword.lower() not in cell_type.lower():
-            continue
 
         for status in disease_status:
             if status == 'normal':
