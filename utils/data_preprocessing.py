@@ -1,13 +1,14 @@
 # utils/data_processing.py
 
-import json
 import os
-from dotenv import load_dotenv
+import re
+import json
 import numpy as np
 import pandas as pd
+from dotenv import load_dotenv
 from collections import OrderedDict
-
 load_dotenv()
+
 
 """
 result (list): List of dictionaries containing results.
@@ -24,7 +25,6 @@ def convert_to_python_types(result):
             elif isinstance(value, (np.ndarray, np.generic)):
                 entry[key] = value.tolist()
     return result
-
 
 """
     Computes the differential cell type abundance for a given dataset.
@@ -163,7 +163,7 @@ def compute_diff_expression(adata, disease_keyword, dataset_id, unit, log_transf
                     ("dataset_id", dataset_id),
                     ("cell_type", cell_type),
                     ("comparison", "disease vs. normal"),
-                    ("condition", "not normal"),
+                    ("condition", "disease"),
                     ("condition_baseline", "normal"),
                     ("regulation", regulation),
                     ("feature_name", adata.var_names[idx]),

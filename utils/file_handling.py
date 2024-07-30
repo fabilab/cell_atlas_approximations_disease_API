@@ -2,7 +2,6 @@ import os
 from dotenv import load_dotenv
 from google.cloud import storage
 import scquill
-import h5py
 from inspect import signature
 
 load_dotenv()
