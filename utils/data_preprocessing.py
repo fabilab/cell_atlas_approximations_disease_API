@@ -42,26 +42,32 @@ def compute_diff_cell_abundance(adata, disease_keyword, dataset_id):
     filtered_obs = df_obs[df_obs['disease'].str.contains(disease_keyword, case=False) | (df_obs['disease'] == 'normal')]
     disease_name = filtered_obs[filtered_obs['disease'].str.contains(disease_keyword, case=False)]['disease'].unique()[0]
     result = []
+    with open(os.getenv('MANIFEST_FILE'), 'r') as f:
+        manifest = json.load(f)
     
+    dataset_title = manifest[dataset_id]['dataset_title']
+    normal_den = filtered_obs[(filtered_obs["disease"] == 'normal')]["cell_count"].sum()
+    disease_den = filtered_obs[(filtered_obs["disease"] != 'normal')]["cell_count"].sum()
     for cell_type in filtered_obs.cell_type.unique():
+        # disease_fraction = number of T cell cell / number of all cells (under the disease condition)
         normal_count = filtered_obs[(filtered_obs["cell_type"] == cell_type) & (filtered_obs["disease"] == 'normal')]["cell_count"].sum()
         disease_count = filtered_obs[(filtered_obs["cell_type"] == cell_type) & (filtered_obs["disease"] != 'normal')]["cell_count"].sum()
-        total_count = normal_count + disease_count
-        normal_fraction = normal_count / total_count
-        disease_fraction = disease_count / total_count
+        normal_fraction = 1.0 * normal_count / normal_den
+        disease_fraction = 1.0 * disease_count / disease_den
         delta_fraction = disease_fraction - normal_fraction
 
         # OrderedDict is used to ensure the dictionary is shown in the same order as defined
         result.append(OrderedDict([
             ("disease", disease_name),
-            ("dataset_id", dataset_id),
+            ("dataset_title", dataset_title),
             ("cell_type", cell_type),
             ("comparison", "disease vs. normal"),
-            ("condition", "not normal"),
+            ("condition", "disease"),
             ("condition_baseline", "normal"),
             ("normal_count", normal_count),
             ("disease_count", disease_count),
-            ("total_count", total_count),
+            ("normal_total_count", normal_den),
+            ("disease_total_count", disease_den),
             ("normal_fraction", normal_fraction),
             ("disease_fraction", disease_fraction),
             ("delta_fraction", delta_fraction)
@@ -100,6 +106,10 @@ def compute_diff_expression(adata, disease_keyword, dataset_id, unit, log_transf
     if filtered_obs.empty:
         return []
     
+    with open(os.getenv('MANIFEST_FILE'), 'r') as f:
+        manifest = json.load(f)
+    
+    dataset_title = manifest[dataset_id]['dataset_title']
     disease_name = filtered_obs[filtered_obs['disease'].str.contains(disease_keyword, case=False)]['disease'].unique()[0]
     
     # Convert filtered_obs['numerical_index'] to a numpy array of integer indices
@@ -160,7 +170,7 @@ def compute_diff_expression(adata, disease_keyword, dataset_id, unit, log_transf
             for idx, regulation in combined_indices:
                 result.append(OrderedDict([
                     ("disease", disease_name),
-                    ("dataset_id", dataset_id),
+                    ("dataset_title", dataset_title),
                     ("cell_type", cell_type),
                     ("comparison", "disease vs. normal"),
                     ("condition", "disease"),
