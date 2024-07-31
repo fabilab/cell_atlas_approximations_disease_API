@@ -11,3 +11,7 @@ app.yaml
 data/
 
 .json
+
+.dockerignore
+
+.gcloudignore

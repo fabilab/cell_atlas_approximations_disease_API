@@ -1,0 +1,12 @@
+# .dockerignore
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+*.pdb
+*.log
+*.lock
+env/
+venv/
+.dockerignore
+Dockerfile
