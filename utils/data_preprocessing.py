@@ -7,15 +7,18 @@ import numpy as np
 import pandas as pd
 from dotenv import load_dotenv
 from collections import OrderedDict
+
+
+
 load_dotenv()
 
 
-"""
-result (list): List of dictionaries containing results.
-Returns (list): List of dictionaries with values converted to Python types.
-This function is used to fix the error of: TypeError: Object of type int64 is not JSON serializable
-"""
-def convert_to_python_types(result):
+def _convert_to_python_types(result):
+    """
+    result (list): List of dictionaries containing results.
+    Returns (list): List of dictionaries with values converted to Python types.
+    This function is used to fix the error of: TypeError: Object of type int64 is not JSON serializable
+    """
     for entry in result:
         for key, value in entry.items():
             if isinstance(value, (np.integer, np.int64)):
@@ -26,7 +29,9 @@ def convert_to_python_types(result):
                 entry[key] = value.tolist()
     return result
 
-"""
+
+def compute_diff_cell_abundance(adata, disease_keyword, dataset_id):
+    """
     Computes the differential cell type abundance for a given dataset.
 
     Parameters:
@@ -36,8 +41,7 @@ def convert_to_python_types(result):
 
     Returns:
         result (list): List of dictionaries containing the computed results.
-"""
-def compute_diff_cell_abundance(adata, disease_keyword, dataset_id):
+    """
     df_obs = adata.obs
     filtered_obs = df_obs[df_obs['disease'].str.contains(disease_keyword, case=False) | (df_obs['disease'] == 'normal')]
     disease_name = filtered_obs[filtered_obs['disease'].str.contains(disease_keyword, case=False)]['disease'].unique()[0]
@@ -73,10 +77,11 @@ def compute_diff_cell_abundance(adata, disease_keyword, dataset_id):
             ("delta_fraction", delta_fraction)
         ]))
     
-    return convert_to_python_types(result)
+    return _convert_to_python_types(result)
 
 
-"""
+def compute_diff_expression(adata, disease_keyword, dataset_id, unit, log_transformed, N, cell_type_keyword):
+    """
     Computes the differential cell type abundance for a given dataset.
 
     Parameters:
@@ -86,9 +91,7 @@ def compute_diff_cell_abundance(adata, disease_keyword, dataset_id):
 
     Returns:
         result (list): List of dictionaries containing the computed results.
-"""
-
-def compute_diff_expression(adata, disease_keyword, dataset_id, unit, log_transformed, N, cell_type_keyword):
+    """
     expression_data = adata.layers['average']
     fraction_data = adata.layers['fraction']
     
@@ -187,9 +190,11 @@ def compute_diff_expression(adata, disease_keyword, dataset_id, unit, log_transf
                     ("delta_fraction", delta_fraction[idx])
                 ]))
 
-    return convert_to_python_types(result)
+    return _convert_to_python_types(result)
+
 
 def get_metadata(disease_keyword='', unique_id_list=[]):
+    """Get metadata about experiments, cell types, etc."""
     
     result = []
     with open(os.getenv('MANIFEST_FILE'), 'r') as f:
@@ -217,4 +222,4 @@ def get_metadata(disease_keyword='', unique_id_list=[]):
                         result.append(item)
                 
 
-    return convert_to_python_types(result)
+    return _convert_to_python_types(result)

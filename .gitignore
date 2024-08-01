@@ -2,6 +2,10 @@
 atlasapprox_disease_api_env
 .venv
 
+# Web secret key
+secret_key.txt
+
+
 documentation/
 __pycache__/
 __init__.py
