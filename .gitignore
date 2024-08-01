@@ -1,5 +1,6 @@
 # Ignore virtual environment
 atlasapprox_disease_api_env
+.venv
 
 documentation/
 __pycache__/

@@ -1,18 +1,23 @@
-# atlasapprox_diseases API
+# cell_atlas_approximations_disease_API
 
 ## Overview
 
-`atlasapprox_diseases` provides an API to fetch and analyze differential gene expression and cell type abundance data related to various diseases. The API is built using compressed h5 files that have been created using the `scquill` package. The original h5ad files are sourced from Cellxgene.
+This repository provides an API to fetch and analyze cell atlas data on various human diseases.
 
+The API sources compressed h5 files created with the [scquill](https://github.com/fabilab/scquill) package on data from [Cellxgene Census](https://chanzuckerberg.github.io/cellxgene-census/). Compared to Cellxgene itself, this API is designed to be much faster and closer to typical biomedical questions.
 
 ## Features
-
+Currently implemented:
 - Analyze differential cell type abundance.
 - Analyze differential gene expression for all cell types or specific cell types.
 - Fetch metadata related to diseases.
 
 ## Python package
 
-At the moment, a Python package is available to facilitate the use of this API. To install the atlasapprox_diseases package, use pip.
+At the moment, the preferred way to access this API is through our Python package [atlasapprox-diseases](https://test.pypi.org/project/atlasapprox-diseases/):
 
-For detailed examples and tutorials on how to use the atlasapprox_diseases API, please check the folder api_tutorials. This folder contains example Jupyter notebooks that demonstrate how to use the API for various tasks.
+```bash
+pip install atlasapprox-diseases
+```
+
+For detailed examples and tutorials, please check the `tutorials` folder.
