@@ -10,10 +10,7 @@ documentation/
 __pycache__/
 __init__.py
 
-.env
-
-app.yaml
-data/
+/venv/
 
 .json
 
