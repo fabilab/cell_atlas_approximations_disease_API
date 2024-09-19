@@ -8,7 +8,6 @@ secret_key.txt
 
 documentation/
 __pycache__/
-__init__.py
 
 /venv/
 
