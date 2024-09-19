@@ -1,4 +1,4 @@
 import yaml
 
-with open("app.yaml") as f:
+with open("config.yaml") as f:
     configuration = yaml.safe_load(f)
