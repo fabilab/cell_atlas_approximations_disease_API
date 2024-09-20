@@ -1,29 +1,40 @@
-# app.py
 """
-Web application supporting the cell atlas approximation disease API
+Web application supporting the cell atlas disease approximation API
 """
-from flask import Flask
+from flask import (
+    Flask,
+)
+from flask_restful import Api
 from flask_cors import CORS
-from routes.differential_celltype_abundance import diff_celltype_abundance_bp
-from routes.differential_gene_expression import diff_gene_expression_bp
-from routes.get_metadata import get_metadata_bp
+from config import configuration as config
+from api import api_dict
 
-app = Flask(__name__)
+print(config)
+
+##############################
+app = Flask(__name__, static_url_path="/static", template_folder="templates")
+app_api = Api(app)
 with open('secret_key.txt') as f:
     app.config['SECRET_KEY'] = f.read()
+##############################
+
+api_authorized_versions = [config['api_version']]
+authorized_resources = {}
+for api_version in api_authorized_versions:
+    # Connect to endpoints
+    if config["api_version"] == "v1":
+        get_api_endpoint = api_dict[api_version]["endpoint_handler"]
+        for api_name, api_object in api_dict[api_version]["objects"].items():
+            app_api.add_resource(api_object, get_api_endpoint(api_name))
+
+    # Open to cross-origin requests
+    authorized_resources[f"/{api_version}/*"] = {"origins": "*"}
 
 # Cross-origin request handler
-# FIXME: do not open to arbitrary requests obviously
-CORS(app, resources={r"/*": {"origins": "*"}})
+CORS(app, resources=authorized_resources)
 
-# Register blueprints
-app.register_blueprint(diff_celltype_abundance_bp)
-app.register_blueprint(diff_gene_expression_bp)
-app.register_blueprint(get_metadata_bp)
 
-if __name__ == '__main__':
-    # when running locally use 127.0.0.1
-    # host = '127.0.0.1'
-    # when deployment, use 0.0.0.0
-    host = '0.0.0.0'
-    app.run(host='127.0.0.1', port=5000)
+# Main loop
+if __name__ == "__main__":
+    # app.run(debug=True)
+    app.run(host="0.0.0.0", port=5000, debug=True)
