@@ -8,9 +8,7 @@ import numpy as np
 from models.utils import convert_to_python_types, load_ensembl_gene_pairs
 
 
-def compute_diff_expression(
-    adata, dataset_id, unit, log_scaled, N, filters
-):
+def get_diff_expression(number=10, **filters):
     """
     Computes the differential cell type abundance for a given dataset.
 
@@ -22,8 +20,11 @@ def compute_diff_expression(
     Returns:
         result (list): List of dictionaries containing the computed results.
     """
+
+    # TODO: Rewrite everything from scratch
+
     # Ensure ENSEMBL_TO_GENE_FILE is loaded correctly
-    ensembl_gene_pair_file = config['env_variables']["ENSEMBL_TO_GENE_FILE"]
+    ensembl_gene_pair_file = config["env_variables"]["ENSEMBL_TO_GENE_FILE"]
 
     # Load Ensembl to gene name mapping
     ensembl_to_gene = load_ensembl_gene_pairs(ensembl_gene_pair_file)
@@ -33,37 +34,36 @@ def compute_diff_expression(
 
     # Set numerical indices on the original adata.obs
     adata.obs["numerical_index"] = np.arange(adata.obs.shape[0])
-    
+
     filtered_obs = adata.obs
-    
-    
+
     # first check when disease keyword is given, make sure that the disease is present in adata
     # when disease is not present, we want to make sure that there is something not "normal" in adata
-    if 'disease' not in filters:
+    if "disease" not in filters:
         disease_filtered = filtered_obs[
-            ~filtered_obs["disease"].str.contains('normal', case=False)
+            ~filtered_obs["disease"].str.contains("normal", case=False)
         ]["disease"].unique()
     else:
         disease_filtered = filtered_obs[
-            filtered_obs["disease"].str.contains(str(filters['disease']), case=False)
+            filtered_obs["disease"].str.contains(str(filters["disease"]), case=False)
         ]["disease"].unique()
-    
+
     if len(disease_filtered) == 0:
-        return []   
+        return []
 
     # If a keyword is given, filter further
     for key in filters:
-        if key not in ['unique_ids'] and filters[key] != '':
-            if key == 'disease':
+        if key not in ["unique_ids"] and filters[key] != "":
+            if key == "disease":
                 filtered_obs = filtered_obs[
-                    filtered_obs["disease"].str.contains(filters['disease'], case=False)
+                    filtered_obs["disease"].str.contains(filters["disease"], case=False)
                     | (filtered_obs["disease"] == "normal")
                 ]
             else:
                 filtered_obs = filtered_obs[
                     filtered_obs[key].str.contains(str(filters[key]), case=False)
                 ]
-    
+
     if filtered_obs.empty:
         return []
 
@@ -87,7 +87,7 @@ def compute_diff_expression(
         for status in disease_status:
             if status == "normal":
                 continue
-                
+
             # Get the numerical indices for normal and disease
             cell_type_in_normal = filtered_obs[
                 (filtered_obs["cell_type"] == cell_type)
@@ -98,7 +98,7 @@ def compute_diff_expression(
                 & (filtered_obs["disease"] == status)
             ]["numerical_index"]
 
-            #cell type missing in either normal or disease condition will not be eligible for differential expression
+            # cell type missing in either normal or disease condition will not be eligible for differential expression
             if len(cell_type_in_normal) == 0 or len(cell_type_in_disease) == 0:
                 continue
 
@@ -158,8 +158,6 @@ def compute_diff_expression(
                     ("disease_fraction", disease_fraction[idx]),
                     ("delta_fraction", delta_fraction[idx]),
                 ]
-                result.append(
-                    OrderedDict(r)
-                )
+                result.append(OrderedDict(r))
 
     return convert_to_python_types(result)

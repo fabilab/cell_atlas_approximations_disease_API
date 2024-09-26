@@ -1,0 +1,24 @@
+api_version: "v1"
+past_versions: []
+
+paths:
+  compressed_atlas: "./static/atlas_data"
+  obs_metadata_file: "./static/atlas_data/approximation_obs.csv"
+
+units:
+  gene_expression: "counts per ten thousand"
+  chromatin_accessibility: "fraction accessible"
+
+pseudocount:
+  gene_expression: 0.1
+  chromatin_accessibility: 0.0001
+
+# OLD VARIABLES FROM YING
+#runtime: python39
+#entrypoint: gunicorn -b :$PORT app:app
+#env_variables:
+#  GOOGLE_CLOUD_PROJECT: even-electron-428800-b6
+#  GOOGLE_CLOUD_BUCKET: disease-approximation-data
+#  MANIFEST_FILE: data/compression_manifest_latest.json
+#  ENSEMBL_TO_GENE_FILE: data/ensembl_to_gene.csv
+# 

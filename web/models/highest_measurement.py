@@ -35,7 +35,7 @@ def compute_gene_measurement(adata, dataset_id, feature):
     ensembl_id = load_gene_mapping().get(feature.upper())
     if not ensembl_id:
         raise ValueError(f"Gene {feature} not found in our database.")
-    
+
     if ensembl_id not in adata.var_names:
         return []  # Gene not found in this dataset
 
@@ -44,7 +44,7 @@ def compute_gene_measurement(adata, dataset_id, feature):
     # Extract the expression data for the gene
     gene_expression = adata.layers["average"][:, gene_idx]
     fraction_detected = adata.layers["fraction"][:, gene_idx]
-    
+
     try:
         with open(os.getenv("MANIFEST_FILE"), "r") as f:
             manifest = json.load(f)
@@ -52,14 +52,14 @@ def compute_gene_measurement(adata, dataset_id, feature):
         # Check if dataset_id exists in the manifest
         if dataset_id not in manifest:
             raise KeyError(f"Dataset ID {dataset_id} not found in the manifest.")
-        
+
         metadata = manifest[dataset_id]
 
     except (KeyError, FileNotFoundError, json.JSONDecodeError) as e:
         # Log the error and skip this dataset
         print(f"Error processing metadata for {dataset_id}: {e}")
         return None  # Skip this dataset if there are any issues with metadata
-    
+
     # Prepare results
     results = []
     for i in range(adata.n_obs):
@@ -80,27 +80,34 @@ def compute_gene_measurement(adata, dataset_id, feature):
         )
     return results
 
+
 def get_normal_baseline(expressions):
     results = []
     for expression in expressions:
-        if expression['disease'] != 'normal':
+        if expression["disease"] != "normal":
             # try to find the normal baseline from expressions
             normal_baseline = [
-                e for e in expressions
-                if e['disease'] == 'normal'
-                and e['cell_type'] == expression['cell_type']
-                and e['collection_name'] == expression['collection_name']
+                e
+                for e in expressions
+                if e["disease"] == "normal"
+                and e["cell_type"] == expression["cell_type"]
+                and e["collection_name"] == expression["collection_name"]
             ]
             if len(normal_baseline) == 0:
-                expression['normal_expression'] = 'N/A'
-                expression['normal_fraction_detected'] = 'N/A'
+                expression["normal_expression"] = "N/A"
+                expression["normal_fraction_detected"] = "N/A"
             else:
-                expression['normal_expression'] = normal_baseline[0]['average_expression']
-                expression['normal_fraction_detected'] = normal_baseline[0]['fraction_detected']
-            
-            results.append(expression)  
-    
+                expression["normal_expression"] = normal_baseline[0][
+                    "average_expression"
+                ]
+                expression["normal_fraction_detected"] = normal_baseline[0][
+                    "fraction_detected"
+                ]
+
+            results.append(expression)
+
     return results
+
 
 def get_highest_measurement(expressions, top_n):
     """
@@ -129,13 +136,13 @@ def get_highest_measurement(expressions, top_n):
         .reset_index()
     )
 
-    combined = pd.merge(avg_exp_df, avg_frac_df, on=["collection_name", "disease", "cell_type", "unit"])
+    combined = pd.merge(
+        avg_exp_df, avg_frac_df, on=["collection_name", "disease", "cell_type", "unit"]
+    )
 
     result = get_normal_baseline(combined.to_dict("records"))
-    
-    sorted_results = sorted(
-        result, key=lambda x: x["average_expression"], reverse=True
-    )
+
+    sorted_results = sorted(result, key=lambda x: x["average_expression"], reverse=True)
     final_result = sorted_results[:top_n]
 
     return convert_to_python_types(final_result)
