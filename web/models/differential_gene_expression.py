@@ -1,5 +1,5 @@
 import numpy as np
-import squill
+import scquill
 
 from config import configuration as config
 from models.paths import get_dataset_path

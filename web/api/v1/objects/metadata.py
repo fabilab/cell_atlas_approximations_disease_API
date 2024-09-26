@@ -1,5 +1,4 @@
-import json
-from flask import Response, request
+from flask import request
 from flask_restful import Resource
 
 from models.metadata import get_metadata
@@ -21,14 +20,11 @@ class Metadata(Resource):
     def get(self):
         args = request.args
 
-        filters = get_optional_metadata_kwargs(args, ["disease", "cell_type", "tissue"])
+        filters = get_optional_metadata_kwargs(
+            args, ["disease", "cell_type", "tissue", "sex", "development_stage_general"]
+        )
         matching_metadata = get_metadata(**filters)
 
         # Convert the list of OrderedDict to JSON string to preserve the order
-        response_json = json.dumps(
-            matching_metadata,
-            ensure_ascii=False,
-            indent=1,
-        )
-        return Response(response_json, mimetype="application/json")
-
+        result = matching_metadata.to_dict(orient="records")
+        return result

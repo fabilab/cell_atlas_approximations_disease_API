@@ -1,4 +1,5 @@
 import re
+import numpy as np
 import pandas as pd
 from config import configuration as config
 from models.utils import (
@@ -24,5 +25,9 @@ def get_metadata(**filters):
     keep = pd.Series(np.ones(len(metadata), dtype=bool), index=metadata.index)
     for key, value in filters.items():
         # Boolean AND between filters
-        keep &= metadata[key].str.contains(value, case=False)
+        if key == "sex":
+            # "male" is a substring of "female"
+            keep &= metadata[key] == value
+        else:
+            keep &= metadata[key].str.contains(value, case=False)
     return metadata.loc[keep]

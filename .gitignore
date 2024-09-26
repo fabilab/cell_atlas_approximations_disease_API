@@ -4,6 +4,7 @@ atlasapprox_disease_api_env
 
 # Web secret key
 secret_key.txt
+web/static/atlas_data
 
 
 documentation/

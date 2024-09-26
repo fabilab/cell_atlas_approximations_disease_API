@@ -5,12 +5,10 @@ from models.metadata import get_metadata
 
 def get_diff_cell_abundance(**filters):
     """
-    Computes the differential cell type abundance for a given dataset.
+    Computes the differential cell type abundance.
 
     Parameters:
-        adata (AnnData): data obtained from scquill
-        disease_keyword (str): Keyword to filter diseases.
-        dataset_id (str): Identifier for the dataset.
+        **filters: Arbitrary keyword arguments to filter the metadata.
 
     Returns:
         result (list): List of dictionaries containing the computed results.

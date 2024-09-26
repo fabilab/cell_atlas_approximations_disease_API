@@ -33,10 +33,12 @@ if __name__ == "__main__":
                 for col_name, col_dtype in zip(col_names, col_dtypes):
                     # FIXME: they are not all strings
                     res[col_name] = group["obs"][col_name].asstr()[:]
-                res["ncells"] = group["obs"]["cell_count"][:]
-                res = pd.DataFrame(res)[col_names]
+                res["cell_count"] = group["obs"]["cell_count"][:]
+                res = pd.DataFrame(res)
                 res["dataset_id"] = dataset_id
+                res = res[["dataset_id"] + col_names + ["cell_count"]]
                 result.append(res)
     result = pd.concat(result)
+    result.reset_index(drop=True, inplace=True)
 
     result.to_csv(data_folder / "approximation_obs.csv", index=False)

@@ -1,3 +1,4 @@
+from flask import request
 from flask_restful import Resource
 
 from api.v1.exceptions import model_exceptions
@@ -22,14 +23,19 @@ class DifferentialCellTypeAbundance(Resource):
         args = request.args
 
         filters = get_optional_metadata_kwargs(
-            args, ["disease", "cell_type", "tissue", "sex"]
+            args,
+            [
+                "disease",
+                "cell_type",
+                "tissue",
+                "sex",
+                "development_stage",
+                "unique_ids",
+            ],
         )
-        unique_ids_str = request.args.get("unique_ids", default="", type=str)
-        if unique_ids_str:
-            filters["unique_ids"] = unique_ids_str.split(",")
 
         diff_cell_abundance = get_diff_cell_abundance(**filters)
-        if len(diff_cell) == 0:
+        if len(diff_cell_abundance) == 0:
             filt_string = ", ".join(filters.keys())
             return {
                 "message": f"No datasets found satisfying the requested filters: {filt_string}"
