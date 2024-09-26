@@ -1,25 +1,46 @@
-from collections import OrderedDict
-import json
-import os
-from config import configuration as config
-
 import numpy as np
+import squill
 
-from models.utils import convert_to_python_types, load_ensembl_gene_pairs
+from config import configuration as config
+from models.paths import get_dataset_path
+from models.utils import load_ensembl_gene_pairs
 
 
-def get_diff_expression(number=10, **filters):
+def get_diff_expression(number=10, method="delta_fraction", **filters):
     """
-    Computes the differential cell type abundance for a given dataset.
+    Computes the differential expression for a given dataset.
 
     Parameters:
-        adata (AnnData): data obtained from scquill
-        keyword (str): Keyword to filter diseases.
-        dataset_id (str): Identifier for the dataset.
+        number (int): The number of differentially expressed features to return.
+        **filters: Arbitrary keyword arguments to filter the metadata.
 
     Returns:
         result (list): List of dictionaries containing the computed results.
     """
+    meta = get_metadata(**filters)
+
+    result = []
+    for dataset_id, obs in meta.groupby("dataset_id"):
+        # Check if both disease and control are present in the dataset
+        disease_states = obs["disease"].unique()
+        if "normal" not in disease_states or len(disease_states) < 2:
+            continue
+
+        approx = scquill.Approximation.read_h5(get_dataset_path(dataset_id))
+        adata = approx.to_anndata(
+            groupby=["cell_type", "disease"],
+        )
+
+        # NOTE: it might be simler to iterate one cell type at a time here
+        adata1 = adata[adata.obs["disease"] == "normal"]
+        adata2 = adata[adata.obs["disease"] != "normal"]
+        if method == "delta_fraction":
+            frac1 = adata1.layers["fraction"]
+            frac2 = adata2.layers["fraction"]
+            # TODO: align the fraction matrices by cell type, etc.
+
+        else:
+            raise NotImplementedError
 
     # TODO: Rewrite everything from scratch
 
