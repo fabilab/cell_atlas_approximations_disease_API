@@ -1,184 +1,126 @@
 import numpy as np
+import pandas as pd
 import scquill
 
 from config import configuration as config
+from models.metadata import get_metadata
 from models.paths import get_dataset_path
 from models.utils import load_ensembl_gene_pairs
 
 
-def get_diff_expression(number=10, method="delta_fraction", **filters):
+def get_diff_expression(number=10, feature=None, method="delta_fraction", **filters):
     """
     Computes the differential expression for a given dataset.
 
     Parameters:
-        number (int): The number of differentially expressed features to return.
+        number (int): The number of differentially expressed features to return. Either this or "feature" must be provided.
+        feature (str): The feature to compute differential expression for. Either this or "number" must be provided.
         **filters: Arbitrary keyword arguments to filter the metadata.
 
     Returns:
         result (list): List of dictionaries containing the computed results.
     """
+    if (number is not None and number > 0) and (feature is not None):
+        raise ValueError("Either 'number' or 'feature' must be provided, not both.")
+    if (number is None or number <= 0) and (feature is None):
+        raise ValueError("Either 'number' or 'feature' must be provided.")
+
     meta = get_metadata(**filters)
 
-    result = []
-    for dataset_id, obs in meta.groupby("dataset_id"):
-        # Check if both disease and control are present in the dataset
-        disease_states = obs["disease"].unique()
-        if "normal" not in disease_states or len(disease_states) < 2:
-            continue
+    # NOTE: this should be improved
+    meta["disease_bin"] = meta["disease"] != "normal"
 
+    ncells = (
+        meta.groupby(["dataset_id", "tissue_general", "cell_type", "disease_bin"])[
+            "cell_count"
+        ]
+        .sum()
+        .unstack("disease_bin", fill_value=0)
+    )
+    # You can only compute differential expression if both disease and control are present
+    ncells = ncells.loc[ncells.all(axis=1)]
+    comparisons = ncells.index
+    comparisons = pd.DataFrame.from_records(comparisons, columns=comparisons.names)
+
+    result = []
+    # Group by dataset_id for speed
+    for dataset_id, obs in comparisons.groupby("dataset_id"):
+        # All the entries in obs are guaranteed to have nonzero cells for both normal and disease
         approx = scquill.Approximation.read_h5(get_dataset_path(dataset_id))
+        # NOTE:: we should binarize consistently
         adata = approx.to_anndata(
-            groupby=["cell_type", "disease"],
+            groupby=["tissue_general", "cell_type", "disease"],
         )
 
-        # NOTE: it might be simler to iterate one cell type at a time here
+        if feature is not None:
+            adata = adata[:, feature]
+
+        # Split between normal and disease
         adata1 = adata[adata.obs["disease"] == "normal"]
         adata2 = adata[adata.obs["disease"] != "normal"]
+
+        # Align the two AnnData objects
+        adata1.obs.index = pd.Index(
+            adata1.obs[["tissue_general", "cell_type"]].agg("\t".join, axis=1).values,
+            name="category",
+        )
+        # FIXME: this could lead to nonunique indices if there are multiple disease conditions
+        adata2.obs.index = pd.Index(
+            adata2.obs[["tissue_general", "cell_type"]].agg("\t".join, axis=1).values,
+            name="category",
+        )
+        if adata2.obs_names.duplicated().any():
+            continue
+        obs_names = obs[["tissue_general", "cell_type"]].agg("\t".join, axis=1).values
+
+        adata1 = adata1[obs_names]
+        adata2 = adata2[obs_names]
+
+        # Ok, now there might be cell types that are missing in one of the conditions, so we need to
+        # use the obs variable to filter these adata
+
         if method == "delta_fraction":
             frac1 = adata1.layers["fraction"]
             frac2 = adata2.layers["fraction"]
-            # TODO: align the fraction matrices by cell type, etc.
+            delta_fraction = frac2 - frac1
 
+            if feature is None:
+                idx_bot = np.argpartition(delta_fraction.ravel(), number)[:number]
+                idx_bot = np.unravel_index(idx_bot, delta_fraction.shape)
+                idx_top = np.argpartition(delta_fraction.ravel(), -number)[-number:]
+                idx_top = np.unravel_index(idx_top, delta_fraction.shape)
+                idx_dict = {"down": idx_bot, "up": idx_top}
+            else:
+                idx = (
+                    np.arange(delta_fraction.shape[0]),
+                    np.zeros(delta_fraction.shape[0], dtype=int),
+                )
+                idx_dict = {"any": idx}
+
+            for idxtype, idx in idx_dict.items():
+                for i, j in zip(*idx):
+                    row1 = adata1.obs.iloc[i]
+                    row2 = adata2.obs.iloc[i]
+                    res = {
+                        "dataset_id": dataset_id,
+                        "tissue_general": row1["tissue_general"],
+                        "cell_type": row1["cell_type"],
+                        "comparison": "disease vs. normal",
+                        "condition": row2["disease"],
+                        "condition_baseline": row1["disease"],
+                        "regulation": idxtype,
+                        "gene": adata1.var_names[j],
+                        "unit": "cptt",
+                        "normal_expr": adata1.layers["average"][i, j],
+                        "disease_expr": adata2.layers["average"][i, j],
+                        "normal_fraction": adata1.layers["fraction"][i, j],
+                        "disease_fraction": adata2.layers["fraction"][i, j],
+                        "metric": delta_fraction[i, j],
+                    }
+                    result.append(res)
         else:
             raise NotImplementedError
 
-    # TODO: Rewrite everything from scratch
+    result = pd.DataFrame(result)
 
-    # Ensure ENSEMBL_TO_GENE_FILE is loaded correctly
-    ensembl_gene_pair_file = config["env_variables"]["ENSEMBL_TO_GENE_FILE"]
-
-    # Load Ensembl to gene name mapping
-    ensembl_to_gene = load_ensembl_gene_pairs(ensembl_gene_pair_file)
-
-    expression_data = adata.layers["average"]
-    fraction_data = adata.layers["fraction"]
-
-    # Set numerical indices on the original adata.obs
-    adata.obs["numerical_index"] = np.arange(adata.obs.shape[0])
-
-    filtered_obs = adata.obs
-
-    # first check when disease keyword is given, make sure that the disease is present in adata
-    # when disease is not present, we want to make sure that there is something not "normal" in adata
-    if "disease" not in filters:
-        disease_filtered = filtered_obs[
-            ~filtered_obs["disease"].str.contains("normal", case=False)
-        ]["disease"].unique()
-    else:
-        disease_filtered = filtered_obs[
-            filtered_obs["disease"].str.contains(str(filters["disease"]), case=False)
-        ]["disease"].unique()
-
-    if len(disease_filtered) == 0:
-        return []
-
-    # If a keyword is given, filter further
-    for key in filters:
-        if key not in ["unique_ids"] and filters[key] != "":
-            if key == "disease":
-                filtered_obs = filtered_obs[
-                    filtered_obs["disease"].str.contains(filters["disease"], case=False)
-                    | (filtered_obs["disease"] == "normal")
-                ]
-            else:
-                filtered_obs = filtered_obs[
-                    filtered_obs[key].str.contains(str(filters[key]), case=False)
-                ]
-
-    if filtered_obs.empty:
-        return []
-
-    with open(os.getenv("MANIFEST_FILE"), "r") as f:
-        manifest = json.load(f)
-
-    dataset_title = manifest[dataset_id]["dataset_title"]
-
-    # Convert filtered_obs['numerical_index'] to a numpy array of integer indices
-    integer_indices = filtered_obs["numerical_index"].to_numpy()
-
-    # Filter the expression and fraction data using the filtered observations' integer indices
-    filtered_expression_data = expression_data[integer_indices, :]
-    filtered_fraction_data = fraction_data[integer_indices, :]
-
-    cell_types = filtered_obs["cell_type"].unique()
-    disease_status = filtered_obs["disease"].unique()
-    result = []
-
-    for cell_type in cell_types:
-        for status in disease_status:
-            if status == "normal":
-                continue
-
-            # Get the numerical indices for normal and disease
-            cell_type_in_normal = filtered_obs[
-                (filtered_obs["cell_type"] == cell_type)
-                & (filtered_obs["disease"] == "normal")
-            ]["numerical_index"]
-            cell_type_in_disease = filtered_obs[
-                (filtered_obs["cell_type"] == cell_type)
-                & (filtered_obs["disease"] == status)
-            ]["numerical_index"]
-
-            # cell type missing in either normal or disease condition will not be eligible for differential expression
-            if len(cell_type_in_normal) == 0 or len(cell_type_in_disease) == 0:
-                continue
-
-            normal_idx = cell_type_in_normal.values[0]
-            disease_idx = cell_type_in_disease.values[0]
-
-            # Map the original indices to the filtered data indices
-            normal_idx = np.where(integer_indices == normal_idx)[0][0]
-            disease_idx = np.where(integer_indices == disease_idx)[0][0]
-
-            # Ensure normal_idx and disease_idx are within bounds
-            if normal_idx >= len(filtered_expression_data) or disease_idx >= len(
-                filtered_expression_data
-            ):
-                continue
-
-            normal_expr = filtered_expression_data[normal_idx, :]
-            disease_expr = filtered_expression_data[disease_idx, :]
-            normal_fraction = filtered_fraction_data[normal_idx, :]
-            disease_fraction = filtered_fraction_data[disease_idx, :]
-            delta_fraction = disease_fraction - normal_fraction
-
-            log2_fc = np.log2((disease_expr + 1) / (normal_expr + 1))
-
-            # ensure top_n does not exceed the number of features
-            if N >= log2_fc.shape[0]:
-                N = log2_fc.shape[0] - 1
-
-            # Sort by delta fraction
-            top_up_indices = np.argsort(delta_fraction)[-N:][::-1]
-            top_down_indices = np.argsort(delta_fraction)[:N]
-
-            # Combine up and down indices with regulation labels
-            combined_indices = [(idx, "up") for idx in top_up_indices] + [
-                (idx, "down") for idx in top_down_indices
-            ]
-
-            for idx, regulation in combined_indices:
-                gene_name = ensembl_to_gene.get(
-                    adata.var_names[idx], adata.var_names[idx]
-                )
-                r = [
-                    ("disease", status),
-                    ("dataset_title", dataset_title),
-                    ("cell_type", cell_type),
-                    ("comparison", "disease vs. normal"),
-                    ("condition", "disease"),
-                    ("condition_baseline", "normal"),
-                    ("regulation", regulation),
-                    ("gene", gene_name),
-                    ("unit", unit),
-                    ("normal_expr", normal_expr[idx]),
-                    ("disease_expr", disease_expr[idx]),
-                    ("log_scaled", log_scaled),
-                    ("log2_fc", log2_fc[idx]),
-                    ("normal_fraction", normal_fraction[idx]),
-                    ("disease_fraction", disease_fraction[idx]),
-                    ("delta_fraction", delta_fraction[idx]),
-                ]
-                result.append(OrderedDict(r))
-
-    return convert_to_python_types(result)
+    return result

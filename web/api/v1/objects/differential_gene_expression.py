@@ -1,8 +1,5 @@
-import json
-import os
-from config import configuration as config
-from flask import Response, request
-from flask_restful import Resource, abort
+from flask import request, abort
+from flask_restful import Resource
 
 from api.v1.exceptions import model_exceptions
 from api.v1.utils import get_optional_metadata_kwargs
@@ -24,18 +21,18 @@ class DifferentialGeneExpression(Resource):
         if unique_ids_str:
             filters["unique_ids"] = unique_ids_str.split(",")
 
-        number = int(request.args.get("top_n", default=10, type=int))
+        feature = args.get("feature", "", type=str)
+        number = int(request.args.get("top_n", default=0, type=int))
+        if feature is not None and number > 0:
+            abort(400, "Either feature or number must be provided, not both")
+        elif feature is None:
+            number = 10
 
-        matching_datasets = get_metadata(
-            filters["disease"], filters["cell_type"], filters["unique_ids"]
-        )
-
-        diff_exp = get_diff_expression(number=number, **filters)
+        diff_exp = get_diff_expression(number=number, feature=feature, **filters)
         if len(diff_exp) == 0:
             return {
                 "message": "No datasets found satisfying disease and cell type filter"
             }
 
-        # return jsonify(all_results)
-        response_json = json.dumps(diff_exp, ensure_ascii=False, indent=4)
-        return Response(response_json, mimetype="application/json")
+        result = diff_exp.to_dict(orient="records")
+        return result
