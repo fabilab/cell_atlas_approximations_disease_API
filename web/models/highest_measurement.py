@@ -1,148 +1,47 @@
-import csv
-import os
-import json
+import numpy as np
 import pandas as pd
+import scquill
 
-from models.utils import convert_to_python_types
-
-
-def load_gene_mapping():
-    gene_csv_path = "data/ensembl_to_gene.csv"
-    gene_to_ensembl = {}
-    with open(gene_csv_path, newline="") as csvfile:
-        reader = csv.reader(csvfile)
-        next(reader)
-        for row in reader:
-            ensembl_id, gene_id = row
-            gene_to_ensembl[gene_id] = ensembl_id
-    return gene_to_ensembl
+from models.metadata import get_metadata
+from models.paths import get_dataset_path
 
 
-def compute_gene_measurement(adata, dataset_id, feature):
-    """
-    Compute all the gene expression measurement for a given feature (gene) from the AnnData object.
+def get_highest_measurement(feature, number=10, **filters):
+    """Compute the highest expressors of a given feature (gene) across all diseases and datasets.
 
     Parameters:
-        adata (AnnData): The AnnData object containing single-cell RNA-seq data.
-        dataset_id (str): The identifier for the dataset (derived from file name).
-        feature (str): The gene name (symbol) of interest.
-        gene_mapping (dict): A dictionary mapping gene names to Ensembl IDs.
+        feature (str): The feature of interest.
+        number (int): The number of highest expressors to return.
 
     Returns:
-        list: A list of dictionaries containing information on cell type, tissue, disease, and expression levels of a gene.
+        list: A list of dictionaries containing the highest expressors of the feature.
     """
 
-    ensembl_id = load_gene_mapping().get(feature.upper())
-    if not ensembl_id:
-        raise ValueError(f"Gene {feature} not found in our database.")
+    meta = get_metadata(**filters)
 
-    if ensembl_id not in adata.var_names:
-        return []  # Gene not found in this dataset
-
-    gene_idx = adata.var_names.get_loc(ensembl_id)  # Get the index of the gene
-
-    # Extract the expression data for the gene
-    gene_expression = adata.layers["average"][:, gene_idx]
-    fraction_detected = adata.layers["fraction"][:, gene_idx]
-
-    try:
-        with open(os.getenv("MANIFEST_FILE"), "r") as f:
-            manifest = json.load(f)
-
-        # Check if dataset_id exists in the manifest
-        if dataset_id not in manifest:
-            raise KeyError(f"Dataset ID {dataset_id} not found in the manifest.")
-
-        metadata = manifest[dataset_id]
-
-    except (KeyError, FileNotFoundError, json.JSONDecodeError) as e:
-        # Log the error and skip this dataset
-        print(f"Error processing metadata for {dataset_id}: {e}")
-        return None  # Skip this dataset if there are any issues with metadata
-
-    # Prepare results
-    results = []
-    for i in range(adata.n_obs):
-        results.append(
-            {
-                "dataset_id": dataset_id,
-                "dataset_title": metadata["dataset_title"],
-                "collection_name": metadata["collection_name"],
-                "cell_type": adata.obs["cell_type"][i],
-                "tissue": adata.obs["tissue"][i],
-                "disease": adata.obs["disease"][i],
-                "sex": adata.obs["sex"][i],
-                "development_stage": adata.obs["development_stage"][i],
-                "average_expression": gene_expression[i],
-                "fraction_detected": fraction_detected[i],
-                "unit": metadata["unit"],
-            }
+    result = []
+    for dataset_id, obs in meta.groupby("dataset_id"):
+        # All the entries in obs are guaranteed to have nonzero cells for both normal and disease
+        approx = scquill.Approximation.read_h5(get_dataset_path(dataset_id))
+        # NOTE:: we should binarize consistently
+        adata = approx.to_anndata(
+            groupby=["tissue_general", "cell_type", "disease"],
         )
-    return results
+        obs_names = (
+            obs[["tissue_general", "cell_type", "disease"]]
+            .agg("\t".join, axis=1)
+            .values
+        )
+        obs_names = pd.Index(obs_names).drop_duplicates()
+        adata.obs["dataset_id"] = dataset_id
+        adata.obs["expression"] = np.asarray(adata[:, feature].X).ravel()
+        if number > adata.n_obs:
+            res = adata.obs
+        else:
+            res = adata.obs.nlargest(number, "expression")
+        result.append(res)
 
+    result = pd.concat(result)
+    result = result.nlargest(number, "expression")
 
-def get_normal_baseline(expressions):
-    results = []
-    for expression in expressions:
-        if expression["disease"] != "normal":
-            # try to find the normal baseline from expressions
-            normal_baseline = [
-                e
-                for e in expressions
-                if e["disease"] == "normal"
-                and e["cell_type"] == expression["cell_type"]
-                and e["collection_name"] == expression["collection_name"]
-            ]
-            if len(normal_baseline) == 0:
-                expression["normal_expression"] = "N/A"
-                expression["normal_fraction_detected"] = "N/A"
-            else:
-                expression["normal_expression"] = normal_baseline[0][
-                    "average_expression"
-                ]
-                expression["normal_fraction_detected"] = normal_baseline[0][
-                    "fraction_detected"
-                ]
-
-            results.append(expression)
-
-    return results
-
-
-def get_highest_measurement(expressions, top_n):
-    """
-    Summarize and filter the top N highest expressors of a gene from all exp results.
-
-    Parameters:
-        expression (list): A list of expression measurements (dictionaries) across multiple datasets.
-        top_n (int): Number of top expressors to return.
-
-    Returns:
-        list: A list of dictionaries containing the top N disease & cell types combination with the highest gene expression.
-    """
-
-    df = pd.DataFrame(expressions)
-    avg_exp_df = (
-        df[["disease", "cell_type", "unit", "collection_name", "average_expression"]]
-        .groupby(by=["disease", "cell_type", "unit", "collection_name"])
-        .mean()
-        .reset_index()
-    )
-
-    avg_frac_df = (
-        df[["disease", "cell_type", "unit", "collection_name", "fraction_detected"]]
-        .groupby(by=["disease", "cell_type", "unit", "collection_name"])
-        .mean()
-        .reset_index()
-    )
-
-    combined = pd.merge(
-        avg_exp_df, avg_frac_df, on=["collection_name", "disease", "cell_type", "unit"]
-    )
-
-    result = get_normal_baseline(combined.to_dict("records"))
-
-    sorted_results = sorted(result, key=lambda x: x["average_expression"], reverse=True)
-    final_result = sorted_results[:top_n]
-
-    return convert_to_python_types(final_result)
+    return result

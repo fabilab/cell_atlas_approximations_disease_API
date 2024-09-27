@@ -2,10 +2,8 @@ import numpy as np
 import pandas as pd
 import scquill
 
-from config import configuration as config
 from models.metadata import get_metadata
 from models.paths import get_dataset_path
-from models.utils import load_ensembl_gene_pairs
 
 
 def get_diff_expression(number=10, feature=None, method="delta_fraction", **filters):
