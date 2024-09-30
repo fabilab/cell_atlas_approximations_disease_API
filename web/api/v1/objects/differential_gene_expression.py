@@ -15,13 +15,18 @@ class DifferentialGeneExpression(Resource):
         args = request.args
 
         filters = get_optional_metadata_kwargs(
-            args, ["disease", "cell_type", "tissue", "sex", "development_stage"]
+            args,
+            [
+                "disease",
+                "cell_type",
+                "tissue",
+                "sex",
+                "development_stage",
+                "unique_ids",
+            ],
         )
-        unique_ids_str = request.args.get("unique_ids", default="", type=str)
-        if unique_ids_str:
-            filters["unique_ids"] = unique_ids_str.split(",")
 
-        feature = args.get("feature", "", type=str)
+        feature = args.get("feature", None, type=str)
         number = int(request.args.get("top_n", default=0, type=int))
         if feature is not None and number > 0:
             abort(400, "Either feature or number must be provided, not both")

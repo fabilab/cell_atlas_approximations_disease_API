@@ -31,3 +31,19 @@ def get_metadata(**filters):
         else:
             keep &= metadata[key].str.contains(value, case=False)
     return metadata.loc[keep]
+
+
+def get_metadata_with_normal(**filters):
+    """Get metadata that fulfill all given filters, including normal samples."""
+    if "disease" not in filters or filters["disease"] == "normal":
+        return get_metadata(**filters)
+
+    # Disease was among the filters, so we need to get both disease and normal samples
+    meta_disease = get_metadata(**filters)
+
+    filters_normal = filters.copy()
+    filters_normal["disease"] = "normal"
+    meta_normal = get_metadata(**filters_normal)
+
+    meta_joint = pd.concat([meta_disease, meta_normal])
+    return meta_joint
