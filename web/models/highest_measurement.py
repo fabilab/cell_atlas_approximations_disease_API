@@ -6,7 +6,7 @@ from models.metadata import get_metadata
 from models.paths import get_dataset_path
 
 
-def get_highest_measurement(feature, number=10, **filters):
+def get_highest_measurement(feature, number=10, groupby=None, **filters):
     """Compute the highest expressors of a given feature (gene) across all diseases and datasets.
 
     Parameters:
@@ -16,6 +16,13 @@ def get_highest_measurement(feature, number=10, **filters):
     Returns:
         list: A list of dictionaries containing the highest expressors of the feature.
     """
+    if groupby is None:
+        groupby = []
+    if "cell_type" not in groupby:
+        groupby = ["cell_type"] + groupby
+        for i, name in enumerate(groupby):
+            if name == "tissue":
+                groupby[i] = "tissue_general"
 
     meta = get_metadata(**filters)
 
@@ -25,13 +32,9 @@ def get_highest_measurement(feature, number=10, **filters):
         approx = scquill.Approximation.read_h5(get_dataset_path(dataset_id))
         # NOTE:: we should binarize consistently
         adata = approx.to_anndata(
-            groupby=["tissue_general", "cell_type", "disease"],
+            groupby=groupby,
         )
-        obs_names = (
-            obs[["tissue_general", "cell_type", "disease"]]
-            .agg("\t".join, axis=1)
-            .values
-        )
+        obs_names = obs[groupby].agg("\t".join, axis=1).values
         obs_names = pd.Index(obs_names).drop_duplicates()
         adata.obs["dataset_id"] = dataset_id
         adata.obs["expression"] = np.asarray(adata[:, feature].X).ravel()

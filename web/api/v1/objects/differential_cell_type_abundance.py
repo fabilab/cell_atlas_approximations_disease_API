@@ -26,7 +26,7 @@ class DifferentialCellTypeAbundance(Resource):
         args = request.args
 
         differential_axis = args.get("differential_axis", "disease", type=str)
-        groupby = get_groupby_args(args)
+        groupby = get_groupby_args(args, ["tissue"])
         filters = get_filter_kwargs(
             args,
             [

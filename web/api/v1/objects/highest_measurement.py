@@ -9,6 +9,7 @@ from api.v1.exceptions import (
     model_exceptions,
     required_parameters,
 )
+from api.v1.utils import get_groupby_args
 
 
 class HighestMeasurement(Resource):
@@ -23,11 +24,16 @@ class HighestMeasurement(Resource):
     def post(self):
         args = request.args
 
+        groupby = get_groupby_args(args, ["tissue", "disease"])
         feature = args.get("feature")
         number = args.get("number", default=10)
 
         # Get the top N highest expressors from all the expression results
-        highest_measurement = get_highest_measurement(feature, number)
+        highest_measurement = get_highest_measurement(
+            feature,
+            number,
+            groupby=groupby,
+        )
         result = highest_measurement.to_dict(orient="records")
 
         return result

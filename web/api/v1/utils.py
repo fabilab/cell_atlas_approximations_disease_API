@@ -53,9 +53,11 @@ def _normalise_sex_string(value):
     return value
 
 
-def get_groupby_args(args):
+def get_groupby_args(args, default=None):
     """Return a list of groupby variables."""
     groupby = args.get("groupby", None, type=str)
     if groupby is not None:
         groupby = groupby.replace(" ", "").split(",")
+    else:
+        groupby = default
     return groupby
