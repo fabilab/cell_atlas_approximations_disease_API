@@ -2,7 +2,10 @@ from flask import request
 from flask_restful import Resource
 
 from api.v1.exceptions import model_exceptions
-from api.v1.utils import get_optional_metadata_kwargs
+from api.v1.utils import (
+    get_filter_kwargs,
+    get_groupby_args,
+)
 
 from models import (
     get_diff_cell_abundance,
@@ -23,10 +26,8 @@ class DifferentialCellTypeAbundance(Resource):
         args = request.args
 
         differential_axis = args.get("differential_axis", "disease", type=str)
-        groupby = args.get("groupby", None, type=str)
-        if groupby is not None:
-            groupby = groupby.replace(" ", "").split(",")
-        filters = get_optional_metadata_kwargs(
+        groupby = get_groupby_args(args)
+        filters = get_filter_kwargs(
             args,
             [
                 "disease",

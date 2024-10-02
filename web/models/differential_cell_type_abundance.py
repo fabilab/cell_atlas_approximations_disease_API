@@ -1,13 +1,7 @@
 import pandas as pd
 
 from models.metadata import get_metadata
-
-
-_differential_baselines = {
-    "disease": "normal",
-    "sex": "female",
-    "age": "adult",
-}
+from models.baseline import get_differential_baseline
 
 
 def get_diff_cell_abundance(
@@ -24,6 +18,8 @@ def get_diff_cell_abundance(
     Returns:
         result (list): List of dictionaries containing the computed results.
     """
+    if groupby is None:
+        groupby = []
     if "cell_type" not in groupby:
         groupby = ["cell_type"] + groupby
         for i, name in enumerate(groupby):
@@ -35,10 +31,13 @@ def get_diff_cell_abundance(
             f"{differential_axis} cannot be a groupby variable and the differential axis at the same time"
         )
 
-    baseline = _differential_baselines[differential_axis]
+    baseline = get_differential_baseline(differential_axis)
     meta = get_metadata(**filters)
     if differential_axis not in meta.columns:
         raise ValueError(f"Metadata does not contain {differential_axis}")
+
+    if len(meta) == 0:
+        return pd.DataFrame()
 
     result = []
     # NOTE: This grouping explicitely forbids cross-dataset comparisons

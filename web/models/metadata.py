@@ -1,10 +1,8 @@
-import re
 import numpy as np
 import pandas as pd
+
 from config import configuration as config
-from models.utils import (
-    convert_to_python_types,
-)
+from models.baseline import get_differential_baseline
 
 metadata = None
 
@@ -41,17 +39,18 @@ def get_metadata(**filters):
     return metadata.loc[keep]
 
 
-def get_metadata_with_normal(**filters):
-    """Get metadata that fulfill all given filters, including normal samples."""
-    if "disease" not in filters or filters["disease"] == "normal":
+def get_metadata_with_baseline(differential_axis, **filters):
+    """Get metadata that fulfill all given filters, including baseline samples."""
+    baseline = get_differential_baseline(differential_axis)
+    if differential_axis not in filters or filters[differential_axis] == baseline:
         return get_metadata(**filters)
 
-    # Disease was among the filters, so we need to get both disease and normal samples
-    meta_disease = get_metadata(**filters)
+    # The differential was among the filters, so we need to get both state and baseline samples
+    meta_state = get_metadata(**filters)
 
-    filters_normal = filters.copy()
-    filters_normal["disease"] = "normal"
-    meta_normal = get_metadata(**filters_normal)
+    filters_baseline = filters.copy()
+    filters_baseline[differential_axis] = baseline
+    meta_baseline = get_metadata(**filters_baseline)
 
-    meta_joint = pd.concat([meta_disease, meta_normal])
+    meta_joint = pd.concat([meta_state, meta_baseline])
     return meta_joint

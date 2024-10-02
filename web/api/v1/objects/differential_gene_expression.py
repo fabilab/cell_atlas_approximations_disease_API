@@ -2,7 +2,10 @@ from flask import request, abort
 from flask_restful import Resource
 
 from api.v1.exceptions import model_exceptions
-from api.v1.utils import get_optional_metadata_kwargs
+from api.v1.utils import (
+    get_filter_kwargs,
+    get_groupby_args,
+)
 
 from models.differential_gene_expression import get_diff_expression
 
@@ -14,7 +17,9 @@ class DifferentialGeneExpression(Resource):
     def post(self):
         args = request.args
 
-        filters = get_optional_metadata_kwargs(
+        differential_axis = args.get("differential_axis", "disease", type=str)
+        groupby = get_groupby_args(args)
+        filters = get_filter_kwargs(
             args,
             [
                 "disease",
@@ -25,15 +30,22 @@ class DifferentialGeneExpression(Resource):
                 "unique_ids",
             ],
         )
-
         feature = args.get("feature", None, type=str)
         number = int(request.args.get("top_n", default=0, type=int))
         if feature is not None and number > 0:
             abort(400, "Either feature or number must be provided, not both")
         elif feature is None:
             number = 10
+        method = args.get("method", "delta_fraction", type=str)
 
-        diff_exp = get_diff_expression(number=number, feature=feature, **filters)
+        diff_exp = get_diff_expression(
+            differential_axis=differential_axis,
+            groupby=groupby,
+            number=number,
+            feature=feature,
+            method=method,
+            **filters,
+        )
         if len(diff_exp) == 0:
             return {
                 "message": "No datasets found satisfying disease and cell type filter"

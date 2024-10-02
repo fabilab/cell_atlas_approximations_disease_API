@@ -2,11 +2,26 @@ import numpy as np
 import pandas as pd
 import scquill
 
-from models.metadata import get_metadata_with_normal
 from models.paths import get_dataset_path
+from models.baseline import get_differential_baseline
+from models.metadata import get_metadata_with_baseline
 
 
-def get_diff_expression(number=10, feature=None, method="delta_fraction", **filters):
+_differential_baselines = {
+    "disease": "normal",
+    "sex": "female",
+    "age": "adult",
+}
+
+
+def get_diff_expression(
+    differential_axis="disease",
+    groupby=None,
+    number=10,
+    feature=None,
+    method="delta_fraction",
+    **filters,
+):
     """
     Computes the differential expression for a given dataset.
 
@@ -23,76 +38,90 @@ def get_diff_expression(number=10, feature=None, method="delta_fraction", **filt
     if (number is None or number <= 0) and (feature is None):
         raise ValueError("Either 'number' or 'feature' must be provided.")
 
-    meta = get_metadata_with_normal(**filters)
+    if groupby is None:
+        groupby = []
+    if "cell_type" not in groupby:
+        groupby = ["cell_type"] + groupby
+        for i, name in enumerate(groupby):
+            if name == "tissue":
+                groupby[i] = "tissue_general"
+
+    if differential_axis in groupby:
+        raise ValueError(
+            f"{differential_axis} cannot be a groupby variable and the differential axis at the same time"
+        )
+
+    baseline = get_differential_baseline(differential_axis)
+    meta = get_metadata_with_baseline(
+        differential_axis,
+        **filters,
+    )
+    if differential_axis not in meta.columns:
+        raise ValueError(f"Metadata does not contain {differential_axis}")
+
     if len(meta) == 0:
         return pd.DataFrame()
 
-    # NOTE: this should be improved
-    meta["disease_bin"] = meta["disease"] != "normal"
-
-    ncells = (
-        meta.groupby(["dataset_id", "tissue_general", "cell_type", "disease_bin"])[
-            "cell_count"
-        ]
-        .sum()
-        .unstack("disease_bin", fill_value=0)
-    )
-    # If normal is missing, we cannot compute differential expression
-    if ncells.shape[1] < 2:
-        __import__("ipdb").set_trace()
-        return pd.DataFrame()
-
-    # You can only compute differential expression if both disease and control are present
-    ncells = ncells.loc[ncells.all(axis=1)]
-    comparisons = ncells.index
-    comparisons = pd.DataFrame.from_records(comparisons, columns=comparisons.names)
-
     result = []
-    # Group by dataset_id for speed
-    for dataset_id, obs in comparisons.groupby("dataset_id"):
+    # NOTE: This grouping explicitely forbids cross-dataset comparisons
+    # that's on purpose for now, re batch effects
+    for dataset_id, obs in meta.groupby("dataset_id"):
+        # Check if both focal group and baseline are present in the dataset
+        differential_states = obs[differential_axis].unique()
+        if baseline not in differential_states or len(differential_states) < 2:
+            continue
+
+        table = (
+            obs.groupby(groupby + [differential_axis])["cell_count"]
+            .sum()
+            .unstack(differential_axis, fill_value=0)
+        )
+        table["dataset_id"] = dataset_id
+
         # All the entries in obs are guaranteed to have nonzero cells for both normal and disease
         approx = scquill.Approximation.read_h5(get_dataset_path(dataset_id))
         # NOTE:: we should binarize consistently
         adata = approx.to_anndata(
-            groupby=["tissue_general", "cell_type", "disease"],
+            groupby=groupby + [differential_axis],
         )
 
         if feature is not None:
             adata = adata[:, feature]
 
-        obs_names = obs[["tissue_general", "cell_type"]].agg("\t".join, axis=1).values
+        obs_names = obs[groupby].agg("\t".join, axis=1).values
 
         # Split between normal and disease
-        adata1 = adata[adata.obs["disease"] == "normal"]
-        adata1.obs.index = pd.Index(
-            adata1.obs[["tissue_general", "cell_type"]].agg("\t".join, axis=1).values,
+        adata_baseline = adata[adata.obs[differential_axis] == baseline]
+        adata_baseline.obs.index = pd.Index(
+            adata_baseline.obs[groupby].agg("\t".join, axis=1).values,
             name="category",
         )
-
-        adata_notnormal = adata[adata.obs["disease"] != "normal"]
-        disease_states = adata_notnormal.obs["disease"].unique()
-        for disease in disease_states:
-            adata2 = adata_notnormal[adata_notnormal.obs["disease"] == disease]
-            adata2.obs.index = pd.Index(
-                adata2.obs[["tissue_general", "cell_type"]]
-                .agg("\t".join, axis=1)
-                .values,
+        for state in differential_states:
+            if state == baseline:
+                continue
+            adata_state = adata[adata.obs[differential_axis] == state]
+            adata_state.obs.index = pd.Index(
+                adata_state.obs[groupby].agg("\t".join, axis=1).values,
                 name="category",
             )
             # Ok, now there might be cell types that are missing in one of the conditions, so we need to
             # use the obs variable to filter these adata
-            obs_namesd = list(set(obs_names) & set(adata2.obs_names))
-            adata1d = adata1[obs_namesd]
-            adata2 = adata2[obs_namesd]
+            obs_namesd = list(set(obs_names) & set(adata_state.obs_names))
+            adata1d = adata_state[obs_namesd]
+            adata2 = adata_state[obs_namesd]
 
             result_dataset_id = _diff_exp_adatas(
                 adata1d,
                 adata2,
                 number,
-                dataset_id,
                 method=method,
                 feature=feature,
             )
+            for res in result_dataset_id:
+                res["dataset_id"] = dataset_id
+                res["differential_axis"] = differential_axis
+                res["state"] = state
+                res["baseline"] = baseline
             result.extend(result_dataset_id)
 
     result = pd.DataFrame(result).sort_values("metric", ascending=False)
@@ -100,9 +129,7 @@ def get_diff_expression(number=10, feature=None, method="delta_fraction", **filt
     return result
 
 
-def _diff_exp_adatas(
-    adata1d, adata2, number, dataset_id, method="delta_fraction", feature=None
-):
+def _diff_exp_adatas(adata1d, adata2, number, method="delta_fraction", feature=None):
     """Compute differential expression between two approximated AnnData objects."""
     result = []
     if method == "delta_fraction":
@@ -126,21 +153,16 @@ def _diff_exp_adatas(
         for idxtype, idx in idx_dict.items():
             for i, j in zip(*idx):
                 row1 = adata1d.obs.iloc[i]
-                row2 = adata2.obs.iloc[i]
                 res = {
-                    "dataset_id": dataset_id,
                     "tissue_general": row1["tissue_general"],
                     "cell_type": row1["cell_type"],
-                    "comparison": "disease vs. normal",
-                    "condition": row2["disease"],
-                    "condition_baseline": row1["disease"],
                     "regulation": idxtype,
                     "gene": adata1d.var_names[j],
                     "unit": "cptt",
-                    "normal_expr": adata1d.layers["average"][i, j],
-                    "disease_expr": adata2.layers["average"][i, j],
-                    "normal_fraction": adata1d.layers["fraction"][i, j],
-                    "disease_fraction": adata2.layers["fraction"][i, j],
+                    "baseline_expr": adata1d.layers["average"][i, j],
+                    "state_expr": adata2.layers["average"][i, j],
+                    "baseline_fraction": adata1d.layers["fraction"][i, j],
+                    "state_fraction": adata2.layers["fraction"][i, j],
                     "metric": delta_fraction[i, j],
                 }
                 result.append(res)

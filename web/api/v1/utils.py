@@ -2,7 +2,7 @@
 
 
 # FIXME: there is a logical fallacy in allowing both unique_ids and metadta filters, deal with it at some point
-def get_optional_metadata_kwargs(args, columns):
+def get_filter_kwargs(args, columns):
     """Return a dictionary of obs metadata keyword arguments to be used as database filters."""
     kwargs = {}
     for column in columns:
@@ -32,6 +32,11 @@ def _clean_metadata_kwargs(kwargs):
         if unique_ids_str:
             kwargs["unique_ids"] = unique_ids_str.split(",")
 
+    if "unique_ids" in kwargs and len(kwargs) > 1:
+        raise ValueError(
+            "You can specify either unique_ids or metadata filters, not both"
+        )
+
     return kwargs
 
 
@@ -46,3 +51,11 @@ def _normalise_sex_string(value):
     if value is not None and not_prefix:
         value = f"!{value}"
     return value
+
+
+def get_groupby_args(args):
+    """Return a list of groupby variables."""
+    groupby = args.get("groupby", None, type=str)
+    if groupby is not None:
+        groupby = groupby.replace(" ", "").split(",")
+    return groupby

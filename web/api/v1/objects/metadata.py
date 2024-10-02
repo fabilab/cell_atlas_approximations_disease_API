@@ -4,7 +4,7 @@ from flask_restful import Resource
 from models.metadata import get_metadata
 
 from api.v1.exceptions import model_exceptions
-from api.v1.utils import get_optional_metadata_kwargs
+from api.v1.utils import get_filter_kwargs
 
 
 class Metadata(Resource):
@@ -20,8 +20,15 @@ class Metadata(Resource):
     def get(self):
         args = request.args
 
-        filters = get_optional_metadata_kwargs(
-            args, ["disease", "cell_type", "tissue", "sex", "development_stage_general"]
+        filters = get_filter_kwargs(
+            args,
+            [
+                "disease",
+                "cell_type",
+                "tissue",
+                "sex",
+                "development_stage_general",
+            ],
         )
         matching_metadata = get_metadata(**filters)
 
