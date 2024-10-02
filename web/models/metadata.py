@@ -24,12 +24,20 @@ def get_metadata(**filters):
 
     keep = pd.Series(np.ones(len(metadata), dtype=bool), index=metadata.index)
     for key, value in filters.items():
+        # Boolean OR
+        invert, value = value.startswith("!"), value.lstrip("!")
+
         # Boolean AND between filters
         if key == "sex":
             # "male" is a substring of "female"
-            keep &= metadata[key] == value
+            keep_key = metadata[key] == value
         else:
-            keep &= metadata[key].str.contains(value, case=False)
+            keep_key = metadata[key].str.contains(value, case=False)
+
+        if invert:
+            keep_key = ~keep_key
+        keep &= keep_key
+
     return metadata.loc[keep]
 
 

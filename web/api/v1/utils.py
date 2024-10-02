@@ -36,9 +36,13 @@ def _clean_metadata_kwargs(kwargs):
 
 
 def _normalise_sex_string(value):
+    not_prefix, value = value.startswith("!"), value.lstrip("!")
     if value.lower().startswith("f"):
-        return "female"
-    if value.lower().startswith("m"):
-        return "male"
-    if value.lower() in ["any", "all"]:
-        return None
+        value = "female"
+    elif value.lower().startswith("m"):
+        value = "male"
+    elif value.lower() in ["any", "all"]:
+        value = None
+    if value is not None and not_prefix:
+        value = f"!{value}"
+    return value

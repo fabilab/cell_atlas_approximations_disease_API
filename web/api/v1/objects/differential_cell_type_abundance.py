@@ -22,6 +22,10 @@ class DifferentialCellTypeAbundance(Resource):
     def post(self):
         args = request.args
 
+        differential_axis = args.get("differential_axis", "disease", type=str)
+        groupby = args.get("groupby", None, type=str)
+        if groupby is not None:
+            groupby = groupby.replace(" ", "").split(",")
         filters = get_optional_metadata_kwargs(
             args,
             [
@@ -34,7 +38,11 @@ class DifferentialCellTypeAbundance(Resource):
             ],
         )
 
-        diff_cell_abundance = get_diff_cell_abundance(**filters)
+        diff_cell_abundance = get_diff_cell_abundance(
+            differential_axis=differential_axis,
+            groupby=groupby,
+            **filters,
+        )
         if len(diff_cell_abundance) == 0:
             filt_string = ", ".join(filters.keys())
             return {
