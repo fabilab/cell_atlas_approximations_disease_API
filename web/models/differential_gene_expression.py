@@ -135,37 +135,41 @@ def _diff_exp_adatas(adata1d, adata2, number, method="delta_fraction", feature=N
     if method == "delta_fraction":
         frac1 = adata1d.layers["fraction"]
         frac2 = adata2.layers["fraction"]
-        delta_fraction = frac2 - frac1
-
-        if feature is None:
-            idx_bot = np.argpartition(delta_fraction.ravel(), number)[:number]
-            idx_bot = np.unravel_index(idx_bot, delta_fraction.shape)
-            idx_top = np.argpartition(delta_fraction.ravel(), -number)[-number:]
-            idx_top = np.unravel_index(idx_top, delta_fraction.shape)
-            idx_dict = {"down": idx_bot, "up": idx_top}
-        else:
-            idx = (
-                np.arange(delta_fraction.shape[0]),
-                np.zeros(delta_fraction.shape[0], dtype=int),
-            )
-            idx_dict = {"any": idx}
-
-        for idxtype, idx in idx_dict.items():
-            for i, j in zip(*idx):
-                row1 = adata1d.obs.iloc[i]
-                res = {
-                    "tissue_general": row1["tissue_general"],
-                    "cell_type": row1["cell_type"],
-                    "regulation": idxtype,
-                    "gene": adata1d.var_names[j],
-                    "unit": "cptt",
-                    "baseline_expr": adata1d.layers["average"][i, j],
-                    "state_expr": adata2.layers["average"][i, j],
-                    "baseline_fraction": adata1d.layers["fraction"][i, j],
-                    "state_fraction": adata2.layers["fraction"][i, j],
-                    "metric": delta_fraction[i, j],
-                }
-                result.append(res)
+        delta = frac2 - frac1
+    elif method == "ratio_average":
+        avg1 = adata1d.layers["average"]
+        avg2 = adata2.layers["average"]
+        delta = (avg2 + 1e-5) / (avg1 + 1e-5)
     else:
         raise NotImplementedError
+
+    if feature is None:
+        idx_bot = np.argpartition(delta.ravel(), number)[:number]
+        idx_bot = np.unravel_index(idx_bot, delta.shape)
+        idx_top = np.argpartition(delta.ravel(), -number)[-number:]
+        idx_top = np.unravel_index(idx_top, delta.shape)
+        idx_dict = {"down": idx_bot, "up": idx_top}
+    else:
+        idx = (
+            np.arange(delta.shape[0]),
+            np.zeros(delta.shape[0], dtype=int),
+        )
+        idx_dict = {"any": idx}
+
+    for idxtype, idx in idx_dict.items():
+        for i, j in zip(*idx):
+            row1 = adata1d.obs.iloc[i]
+            res = {
+                "tissue_general": row1["tissue_general"],
+                "cell_type": row1["cell_type"],
+                "regulation": idxtype,
+                "gene": adata1d.var_names[j],
+                "unit": "cptt",
+                "baseline_expr": adata1d.layers["average"][i, j],
+                "state_expr": adata2.layers["average"][i, j],
+                "baseline_fraction": adata1d.layers["fraction"][i, j],
+                "state_fraction": adata2.layers["fraction"][i, j],
+                "metric": delta[i, j],
+            }
+            result.append(res)
     return result
