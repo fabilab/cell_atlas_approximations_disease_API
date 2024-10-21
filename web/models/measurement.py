@@ -25,18 +25,36 @@ def get_measurement(features, kind, groupby=None, **filters):
 
     meta = get_metadata(**filters)
 
+    # For each filter, we need to make sure that the data is not coarse grained before we apply it
+    filter_cols = list(filters.keys())
+    filter_cols_additional = [col for col in filter_cols if col not in groupby]
+    groupby_with_filters = groupby + filter_cols_additional
+
     result = []
     for dataset_id, obs in meta.groupby("dataset_id"):
         # All the entries in obs are guaranteed to have nonzero cells for both normal and disease
         approx = scquill.Approximation.read_h5(get_dataset_path(dataset_id))
+
         # NOTE:: we should binarize consistently
         adata = approx.to_anndata(
-            groupby=groupby,
+            groupby=groupby_with_filters,
             features=features,
         )
+        adata.obs["dataset_id"] = dataset_id
+
+        # Filter and coarse grain, in that order
+        # dataset_id is intrinsically filtered by the for loop
+        if len(filter_cols) > 0 and filter_cols != ["dataset_id"]:
+            obs_filter_unique = obs.set_index(filter_cols).index.drop_duplicates()
+            idx_obs = adata.obs_names[
+                adata.obs.set_index(filter_cols).index.isin(obs_filter_unique)
+            ]
+            adata = adata[idx_obs]
+            adata = scquill.utils.coarse_grain_anndata(adata, groupby=groupby)
+
+        # Now we can index the adata properly
         obs_names = obs[groupby].agg("\t".join, axis=1).values
         obs_names = pd.Index(obs_names).drop_duplicates()
-        adata.obs["dataset_id"] = dataset_id
 
         res = adata.obs.copy()
         for feature in features:
