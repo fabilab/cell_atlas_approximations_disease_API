@@ -61,3 +61,8 @@ def get_groupby_args(args, default=None):
     else:
         groupby = default
     return groupby
+
+
+def clean_feature_string(featurestring):
+    """Clean feature string."""
+    return featurestring.replace(" ", "").split(",")

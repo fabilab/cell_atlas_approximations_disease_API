@@ -16,6 +16,7 @@ CERT=0
 FLASK=${VENV_DIR}/bin/flask
 PIP=${VENV_DIR}/bin/pip
 PYTEST=${VENV_DIR}/bin/pytest
+PORT=${PORT:=5000}
 export FLASK_DEBUG=1
 
 if [ x$CLEAN = x1 ]; then
@@ -37,7 +38,7 @@ if [ x$CERT = x1 ]; then
 	if [ x$VERBOSE = x1 ]; then
 		echo "${FLASK} run --cert=adhoc"
 	fi
-	${FLASK} run --cert=adhoc
+	${FLASK} run --cert=adhoc -p ${PORT}
 else
-	${FLASK} run
+	${FLASK} run -p ${PORT}
 fi

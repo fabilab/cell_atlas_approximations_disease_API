@@ -3,5 +3,5 @@ Flask-RESTful==0.3.9
 Flask-Cors==4.0.2
 requests==2.31.0
 h5py==3.11.0
-scquill==0.2.13
+scquill==0.3.1
 mygene==3.2.2
