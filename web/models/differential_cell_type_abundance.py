@@ -1,6 +1,6 @@
 import pandas as pd
 
-from models.metadata import get_metadata
+from models.metadata import get_metadata_with_baseline
 from models.baseline import get_differential_baseline
 
 
@@ -32,7 +32,7 @@ def get_diff_cell_abundance(
         )
 
     baseline = get_differential_baseline(differential_axis)
-    meta = get_metadata(**filters)
+    meta =get_metadata_with_baseline(differential_axis, **filters)
     if differential_axis not in meta.columns:
         raise ValueError(f"Metadata does not contain {differential_axis}")
 
@@ -40,12 +40,14 @@ def get_diff_cell_abundance(
         return pd.DataFrame()
 
     result = []
+    print(meta)
     # NOTE: This grouping explicitely forbids cross-dataset comparisons
     # that's on purpose for now, re batch effects
     for dataset_id, obs in meta.groupby("dataset_id"):
         # Check if both focal group and baseline are present in the dataset
         differential_states = obs[differential_axis].unique()
         if baseline not in differential_states or len(differential_states) < 2:
+        # if len(differential_states) < 2:
             continue
 
         table = (
