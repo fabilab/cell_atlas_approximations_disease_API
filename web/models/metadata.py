@@ -20,6 +20,10 @@ def get_metadata(**filters):
     if metadata is None:
         load_metadata()
 
+    # Map API parameters to database columns
+    if 'tissue' in filters:
+        filters['tissue_general'] = filters.pop('tissue')
+
     keep = pd.Series(np.ones(len(metadata), dtype=bool), index=metadata.index)
     for key, value in filters.items():
         # Boolean OR
