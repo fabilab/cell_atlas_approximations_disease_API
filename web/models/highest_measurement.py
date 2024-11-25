@@ -16,6 +16,14 @@ def get_highest_measurement(feature, number=10, groupby=None, **filters):
     Returns:
         list: A list of dictionaries containing the highest expressors of the feature.
     """
+    
+    if type(number) == str:
+        try:
+            number = int(number)
+        except:
+            print(f"Requested number '{number}' is not valid, using default 10")
+            number = 10
+            
     if groupby is None:
         groupby = []
     if "cell_type" not in groupby:
