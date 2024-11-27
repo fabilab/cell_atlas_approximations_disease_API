@@ -25,7 +25,10 @@ def _clean_metadata_kwargs(kwargs):
     # NOTE: This is a temporary fix re renaming of column
     if "development_stage" in kwargs:
         kwargs["development_stage_general"] = kwargs.pop("development_stage")
-
+    
+    if "tissue" in kwargs:
+        kwargs["tissue_general"] = kwargs.pop("tissue")
+        
     if "unique_ids" in kwargs:
         unique_ids_str = kwargs.pop("unique_ids")
         # Skip if empty string

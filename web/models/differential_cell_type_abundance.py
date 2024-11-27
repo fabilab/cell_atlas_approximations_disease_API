@@ -1,6 +1,6 @@
 import pandas as pd
 
-from models.metadata import get_metadata
+from models.metadata import get_metadata_with_baseline
 from models.baseline import get_differential_baseline
 
 
@@ -20,19 +20,29 @@ def get_diff_cell_abundance(
     """
     if groupby is None:
         groupby = []
+        
+    # Always include cell_type in grouping
     if "cell_type" not in groupby:
         groupby = ["cell_type"] + groupby
-        for i, name in enumerate(groupby):
-            if name == "tissue":
-                groupby[i] = "tissue_general"
-
+    
+    # Add extra grouping columns if they're used in filters
+    # (tissue, sex, development_stage)
+    if "tissue_general" in filters and "tissue_general" not in groupby:
+        groupby = ["tissue_general"] + groupby
+    
+    if "sex" in filters and "sex" not in groupby:
+        groupby = ["sex"] + groupby
+    
+    if "development_stage_general" in filters and "development_stage_general" not in groupby:
+        groupby = ["development_stage_general"] + groupby
+        
     if differential_axis in groupby:
         raise ValueError(
             f"{differential_axis} cannot be a groupby variable and the differential axis at the same time"
         )
 
     baseline = get_differential_baseline(differential_axis)
-    meta = get_metadata(**filters)
+    meta = get_metadata_with_baseline(differential_axis, **filters)
     if differential_axis not in meta.columns:
         raise ValueError(f"Metadata does not contain {differential_axis}")
 
@@ -46,6 +56,7 @@ def get_diff_cell_abundance(
         # Check if both focal group and baseline are present in the dataset
         differential_states = obs[differential_axis].unique()
         if baseline not in differential_states or len(differential_states) < 2:
+        # if len(differential_states) < 2:
             continue
 
         table = (
