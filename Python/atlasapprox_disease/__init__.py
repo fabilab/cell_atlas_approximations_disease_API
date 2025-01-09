@@ -52,7 +52,7 @@ class API:
     cache = {}
     
     def __init__(self, url=None):
-        """Create an instance of the atlasapprox-disease API."""
+        """Create an instance of the atlasapprox_disease API."""
         self.baseurl = url if url is not None else baseurl
     
     def metadata(

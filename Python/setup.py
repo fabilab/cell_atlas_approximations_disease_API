@@ -11,7 +11,7 @@ with open(version_file) as f:
     version = f.read().rstrip('\n')
 
 
-long_description = """[![Documentation Status](https://readthedocs.org/projects/atlasapprox-disease/badge/?version=latest)](https://apidocs.atlasapprox-disease.org/en/latest/?badge=latest)
+long_description = """[![Documentation Status](https://readthedocs.org/projects/atlasapprox_disease/badge/?version=latest)](https://apidocs.atlasapprox_disease.org/en/latest/?badge=latest)
 
 Python interface to disease-specific cell atlas approximations
 ==============================================================
@@ -31,7 +31,7 @@ In addition to this Python package, these questions can be addressed in R or thr
 
 setup(
     name="atlasapprox_disease",
-    url="https://apidocs.atlasapprox-disease.org",
+    url="https://apidocs.atlasapprox_disease.org",
     description="Disease-specific cell atlas approximations, Python API",
     long_description=long_description,
     long_description_content_type='text/markdown',
