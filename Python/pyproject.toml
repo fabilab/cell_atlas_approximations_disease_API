@@ -1,3 +1,4 @@
+
 [build-system]
 requires = ["setuptools >= 61.0"]
 build-backend = "setuptools.build_meta"
@@ -22,7 +23,7 @@ keywords = [
   "cell atlas",
   "omics",
   "biology",
-  "disease,
+  "disease",
   "bioinformatics",
 ]
 classifiers = [
