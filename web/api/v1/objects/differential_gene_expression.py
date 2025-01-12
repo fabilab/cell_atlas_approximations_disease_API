@@ -30,12 +30,18 @@ class DifferentialGeneExpression(Resource):
                 "unique_ids",
             ],
         )
+        
+        if "sex" in filters and "sex" not in groupby:
+            groupby = ["sex"] + groupby
+        
         feature = args.get("feature", None, type=str)
         number = int(request.args.get("top_n", default=0, type=int))
         if feature is not None and number > 0:
             abort(400, "Either feature or number must be provided, not both")
-        elif feature is None:
+        
+        if number == 0:
             number = 10
+
         method = args.get("method", "delta_fraction", type=str)
 
         diff_exp = get_diff_expression(
