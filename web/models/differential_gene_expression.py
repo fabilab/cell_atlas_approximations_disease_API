@@ -40,6 +40,7 @@ def get_diff_expression(
 
     if groupby is None:
         groupby = []
+    # Ensure the comparison group has the same cell type and tissue (by default)
     if "cell_type" not in groupby:
         groupby = ["cell_type"] + groupby
         for i, name in enumerate(groupby):
