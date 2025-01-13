@@ -40,6 +40,7 @@ def get_diff_expression(
 
     if groupby is None:
         groupby = []
+    # Ensure the comparison group has the same cell type and tissue (by default)
     if "cell_type" not in groupby:
         groupby = ["cell_type"] + groupby
         for i, name in enumerate(groupby):
@@ -107,7 +108,7 @@ def get_diff_expression(
             # Ok, now there might be cell types that are missing in one of the conditions, so we need to
             # use the obs variable to filter these adata
             obs_namesd = list(set(obs_names) & set(adata_state.obs_names))
-            adata1d = adata_state[obs_namesd]
+            adata1d = adata_baseline[obs_namesd]
             adata2 = adata_state[obs_namesd]
 
             result_dataset_id = _diff_exp_adatas(
