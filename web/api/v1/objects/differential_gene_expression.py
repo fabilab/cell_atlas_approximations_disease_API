@@ -36,11 +36,17 @@ class DifferentialGeneExpression(Resource):
         
         feature = args.get("feature", None, type=str)
         number = int(request.args.get("top_n", default=0, type=int))
-        if feature is not None and number > 0:
-            abort(400, "Either feature or number must be provided, not both")
+        # if feature is not None and number > 0:
+        #     abort(400, "Either feature or number must be provided, not both")
         
-        if number == 0:
-            number = 10
+        # if 'feature' is provided, igonore top_n
+        if feature is not None:
+            number = None
+            
+        else:
+            # If `feature` is not provided, set `top_n` to a default value if not specified
+            if number is None or number <= 0:
+                number = 10
 
         method = args.get("method", "delta_fraction", type=str)
 

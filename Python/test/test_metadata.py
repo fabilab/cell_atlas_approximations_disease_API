@@ -10,16 +10,13 @@ class TestBasic(unittest.TestCase):
 
     def test_metadata(self):
         api = aad.API()
-        result = api.metadata(disease="Crohn")
-        print("reulst type is---------")
-        print(type(result))
+        result = api.metadata(disease="Flu")
         self.assertEqual(type(result), list)
         self.assertTrue(len(result) > 0)
         
     def test_metadata_invalid_keyword(self):
         api = aad.API()
         result = api.metadata(tissue="hello")
-        
         self.assertEqual(type(result), list)
         self.assertTrue(len(result) == 0)
     
@@ -37,3 +34,5 @@ class TestBasic(unittest.TestCase):
         for record in result:
             assert "disease" in record
             assert "kidney" in record["disease"].lower()
+            
+    
