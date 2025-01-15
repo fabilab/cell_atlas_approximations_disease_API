@@ -10,6 +10,10 @@ from atlasapprox_disease.utils import (
     _fetch_metadata,
     _fetch_differential_cell_type_abundance,
     _fetch_differential_gene_expression,
+    _fetch_highest_measurement,
+    _fetch_average,
+    _fetch_fraction_detected,
+    _fetch_dotplot,
 )
 
 __version__ = "0.0.1"
@@ -138,7 +142,7 @@ class API:
         tissue: str = None,
         sex: str = None,
         development_stage: str = None,
-        top_n: int = 10,
+        top_n: int = None,
         feature: str = None,
         method: str = "delta_fraction",
         unique_ids: Union[str, List[str]] = None,
@@ -176,3 +180,87 @@ class API:
             method,
             unique_ids,
         )
+        
+    def highest_measurement(
+        self,
+        feature: str =  None,
+        number : int = None,
+    ):
+        """
+        Get the highest measurement of a specific feature.
+
+        Args:
+            feature (str): The feature (gene) to query.
+            number (int): The number of highest expressors to return.
+
+        Returns:
+            pd.DataFrame: A DataFrame containing the highest measurements.
+        """
+        return _fetch_highest_measurement(self, feature, number)
+
+    def average(
+        self,
+        features: str,
+        disease: str = None,
+        cell_type: str = None,
+        tissue: str = None,
+        sex: str = None,
+        development_stage: str = None,
+    ):
+        """
+        Get the average expression of a/a list of given genes
+
+        Args:
+            features (str): The feature (gene) to query.
+            disease (str): The disease or disease keyword to filter the data
+            cell_type (str): Filter by cell type (optional)
+            tissue (str): Filter by tissue (optional)
+            sex (str): Filter by sex (optional)
+            development_stage (str): Filter by development stage (optional)
+        """
+        return _fetch_average(self, features, disease, cell_type, tissue, sex, development_stage)
+    
+    def fraction_detected(
+        self,
+        features: str,
+        disease: str = None,
+        cell_type: str = None,
+        tissue: str = None,
+        sex: str = None,
+        development_stage: str = None,
+    ):
+        """
+        Get the fraction of a/a list of given genes
+
+        Args:
+            features (str): The feature (gene) to query.
+            disease (str): The disease or disease keyword to filter the data
+            cell_type (str): Filter by cell type (optional)
+            tissue (str): Filter by tissue (optional)
+            sex (str): Filter by sex (optional)
+            development_stage (str): Filter by development stage (optional)
+        """
+        return _fetch_fraction_detected(self, features, disease, cell_type, tissue, sex, development_stage)
+    
+    def dotplot(
+        self,
+        features: str,
+        disease: str = None,
+        cell_type: str = None,
+        tissue: str = None,
+        sex: str = None,
+        development_stage: str = None,
+    ):
+        """
+        Prepare data for a dotplot, including average expression and fraction detected, 
+        for the specified features.
+        
+        Args:
+            features (str): The feature (gene) to query.
+            disease (str): The disease or disease keyword to filter the data
+            cell_type (str): Filter by cell type (optional)
+            tissue (str): Filter by tissue (optional)
+            sex (str): Filter by sex (optional)
+            development_stage (str): Filter by development stage (optional)
+        """
+        return _fetch_dotplot(self, features, disease, cell_type, tissue, sex, development_stage)
