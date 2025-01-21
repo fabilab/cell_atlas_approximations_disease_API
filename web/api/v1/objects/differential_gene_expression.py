@@ -39,7 +39,7 @@ class DifferentialGeneExpression(Resource):
         if feature is not None and number > 0:
             abort(400, "Either feature or number must be provided, not both")
         
-        if number == 0:
+        elif feature is None and number == 0:
             number = 10
 
         method = args.get("method", "delta_fraction", type=str)

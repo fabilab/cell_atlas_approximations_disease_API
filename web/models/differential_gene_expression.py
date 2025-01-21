@@ -107,7 +107,9 @@ def get_diff_expression(
             )
             # Ok, now there might be cell types that are missing in one of the conditions, so we need to
             # use the obs variable to filter these adata
-            obs_namesd = list(set(obs_names) & set(adata_state.obs_names))
+            # obs_namesd = list(set(obs_names) & set(adata_state.obs_names))
+            
+            obs_namesd = list(set(adata_baseline.obs_names) & set(adata_state.obs_names))
             adata1d = adata_baseline[obs_namesd]
             adata2 = adata_state[obs_namesd]
 
