@@ -1,6 +1,16 @@
 from flask import request
 from flask_restful import abort
 
+from models.exceptions import (
+    DiseaseNotFoundError,
+    CellTypeNotFoundError,
+    TissueNotFoundError,
+    FeatureNotFoundError,
+    SomeFeaturesNotFoundError,
+    DevelopmentStageNotFoundError,
+    NoMatchingDatasetsError,
+)
+
 class FeatureStringFormatError(Exception):
     def __init__(self, msg, features):
         self.features = features
@@ -44,6 +54,82 @@ def model_exceptions(func):
     def inner(*args_inner, **kwargs_inner):
         try:
             return func(*args_inner, **kwargs_inner)
+        
+        except DiseaseNotFoundError as exc:
+            abort(
+                400,
+                message=f"No disease found that matches '{exc.disease}'. Please check the spelling or try a different query.",
+                error={
+                    "type": "invalid_parameter",
+                    "invalid_parameter": "disease",
+                    "invalid_value": exc.disease,
+                },
+            )
+        except CellTypeNotFoundError as exc:
+            abort(
+                400,
+                message=f"No cell type found that matches '{exc.cell_type}'.",
+                error={
+                    "type": "invalid_parameter",
+                    "invalid_parameter": "cell_type",
+                    "invalid_value": exc.cell_type,
+                },
+            )
+        except TissueNotFoundError as exc:
+            abort(
+                400,
+                message=f"No tissue found that matches '{exc.tissue}'.",
+                error={
+                    "type": "invalid_parameter",
+                    "invalid_parameter": "tissue",
+                    "invalid_value": exc.tissue,
+                },
+            )
+
+        except FeatureNotFoundError as exc:
+            abort(
+                400,
+                message=f"No feature found that matches '{exc.feature}'. Please ensure the feature name is correct.",
+                error={
+                    "type": "invalid_parameter",
+                    "invalid_parameter": "feature",
+                    "invalid_value": exc.feature,
+                    "suggestion": "Check for typos or verify the feature name in the dataset."
+                },
+            )
+
+        except SomeFeaturesNotFoundError as exc:
+            abort(
+                400,
+                message=f"Some features could not be found: {', '.join(exc.features)}.",
+                error={
+                    "type": "invalid_parameter",
+                    "invalid_parameter": "features",
+                    "invalid_value": exc.features,
+                    "suggestion": "Ensure all feature names are correct and exist in the dataset."
+                },
+            )
+        except DevelopmentStageNotFoundError as exc:
+            abort(
+                400,
+                message=f"No development stage found that matches '{exc.development_stage_general}'.",
+                error={
+                    "type": "invalid_parameter",
+                    "invalid_parameter": "development_stage_general",
+                    "invalid_value": exc.development_stage_general,
+                },
+            )
+        
+        except NoMatchingDatasetsError as exc:
+            abort(
+                404,
+                message=exc.args[0],  # Use the message passed in the exception
+                error={
+                    "type": "no_results",
+                    "filters_used": exc.filters
+                },
+            )
+            
         except Exception as exc:
             return {
                 "message": str(exc),
