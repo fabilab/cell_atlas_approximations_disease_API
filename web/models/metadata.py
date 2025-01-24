@@ -8,7 +8,7 @@ from models.exceptions import (
     CellTypeNotFoundError,
     TissueNotFoundError,
     DevelopmentStageNotFoundError,
-    NoMatchingDatasetsError
+    NoMatchingDatasetsError,
 )
 
 metadata = None

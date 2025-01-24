@@ -9,6 +9,7 @@ from models.exceptions import (
     SomeFeaturesNotFoundError,
     DevelopmentStageNotFoundError,
     NoMatchingDatasetsError,
+    NoContrastingConditionsInADatasetError
 )
 
 class FeatureStringFormatError(Exception):
@@ -94,19 +95,17 @@ def model_exceptions(func):
                     "type": "invalid_parameter",
                     "invalid_parameter": "feature",
                     "invalid_value": exc.feature,
-                    "suggestion": "Check for typos or verify the feature name in the dataset."
                 },
             )
 
         except SomeFeaturesNotFoundError as exc:
             abort(
                 400,
-                message=f"Some features could not be found: {', '.join(exc.features)}.",
+                message=f"Some features could not be found: {', '.join(exc.features)}. Please remove it from the query",
                 error={
                     "type": "invalid_parameter",
                     "invalid_parameter": "features",
                     "invalid_value": exc.features,
-                    "suggestion": "Ensure all feature names are correct and exist in the dataset."
                 },
             )
         except DevelopmentStageNotFoundError as exc:
@@ -123,7 +122,17 @@ def model_exceptions(func):
         except NoMatchingDatasetsError as exc:
             abort(
                 404,
-                message=exc.args[0],  # Use the message passed in the exception
+                message=exc.args[0],
+                error={
+                    "type": "no_results",
+                    "filters_used": exc.filters
+                },
+            )
+        
+        except NoContrastingConditionsInADatasetError as exc:
+            abort(
+                404,
+                message=exc.args[0],
                 error={
                     "type": "no_results",
                     "filters_used": exc.filters

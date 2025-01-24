@@ -32,3 +32,8 @@ class NoMatchingDatasetsError(ValueError):
     def __init__(self, msg, filters):
         self.filters = filters
         super().__init__(msg)
+
+class NoContrastingConditionsInADatasetError(ValueError):
+    def __init__(self, msg, filters):
+        self.filters = filters
+        super().__init__(msg)
