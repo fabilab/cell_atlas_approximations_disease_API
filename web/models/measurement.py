@@ -4,6 +4,7 @@ import scquill
 
 from models.metadata import get_metadata
 from models.paths import get_dataset_path
+from models.exceptions import SomeFeaturesNotFoundError
 
 
 def get_measurement(features, kind, groupby=None, **filters):
@@ -38,8 +39,22 @@ def get_measurement(features, kind, groupby=None, **filters):
         # NOTE:: we should binarize consistently
         adata = approx.to_anndata(
             groupby=groupby_with_filters,
-            features=features,
         )
+
+        # Validate feature names.
+        # This validation slows down the request by approximately 2 seconds. Optimization needed in the future.
+        invalid_features = [feature for feature in features if feature not in adata.var_names]
+        if invalid_features:
+            raise SomeFeaturesNotFoundError(
+                msg=f"Some features could not be found in dataset '{dataset_id}': {', '.join(invalid_features)}.",
+                features=invalid_features
+            )
+        
+        adata = approx.to_anndata(
+            groupby=groupby_with_filters,
+            features=features
+        )
+            
         adata.obs["dataset_id"] = dataset_id
 
         # Filter and coarse grain, in that order

@@ -5,6 +5,9 @@ import scquill
 from models.metadata import get_metadata
 from models.paths import get_dataset_path
 
+from models.exceptions import (
+    FeatureNotFoundError,
+)
 
 def get_highest_measurement(feature, number=10, groupby=None, **filters):
     """Compute the highest expressors of a given feature (gene) across all diseases and datasets.
@@ -42,6 +45,14 @@ def get_highest_measurement(feature, number=10, groupby=None, **filters):
         adata = approx.to_anndata(
             groupby=groupby,
         )
+        
+        # Check if the provided feature name is valid.
+        if feature not in adata.var_names:
+            raise FeatureNotFoundError(
+                msg=f"Feature '{feature}' not found in dataset '{dataset_id}'.",
+                feature=feature
+            )
+
         obs_names = obs[groupby].agg("\t".join, axis=1).values
         obs_names = pd.Index(obs_names).drop_duplicates()
         adata.obs["dataset_id"] = dataset_id
