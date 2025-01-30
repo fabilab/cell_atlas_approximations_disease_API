@@ -1,5 +1,7 @@
 import numpy as np
 import pandas as pd
+import hashlib
+import time
 
 from config import configuration as config
 from models.baseline import get_differential_baseline
@@ -13,13 +15,25 @@ from models.exceptions import (
 
 metadata = None
 
+def generate_unique_id(row):
+    """Gnerate SA256 hash for a given row"""
+    row_string = ",".join(map(str, row))  # Convert row values to a single string
+    m = hashlib.md5()
+    m.update(row_string.encode("utf-8"))  # Update the hash with encoded row string
+    return m.hexdigest()  # Generate MD5 hash
 
 def load_metadata():
     """Cache metadata from the manifest file."""
     global metadata
     obs = pd.read_csv(config["paths"]["obs_metadata_file"])
     metadata = obs
-
+    
+    # Measure time for generating unique IDs
+    unique_id_start_time = time.time()
+    # Add unique_id column to metadata. Generate unique_id ONCE and store it
+    obs["unique_id"] = obs.apply(generate_unique_id, axis=1)
+    unique_id_end_time = time.time()
+    print(f"Time taken to generate unique IDs: {unique_id_end_time - unique_id_start_time:.4f} seconds")
 
 def get_metadata(**filters):
     """Get metadata that filfill all given filters."""
@@ -75,6 +89,13 @@ def get_metadata(**filters):
             msg="No datasets found that satisfy the requested filters.",
             filters=filters
         )
+        
+    # Generate unique_id AFTER filtering
+    # filtered_metadata["unique_id"] = filtered_metadata.apply(generate_unique_id, axis=1)
+
+    # Move `unique_id` to the first column
+    cols = ["unique_id"] + [col for col in filtered_metadata.columns if col != "unique_id"]
+    filtered_metadata = filtered_metadata[cols]
 
     return filtered_metadata
 
