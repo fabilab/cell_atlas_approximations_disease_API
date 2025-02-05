@@ -1,22 +1,48 @@
 """Utility functions for the API."""
-
+from models.metadata import get_metadata
 
 # FIXME: there is a logical fallacy in allowing both unique_ids and metadta filters, deal with it at some point
 def get_filter_kwargs(args, columns):
     """Return a dictionary of obs metadata keyword arguments to be used as database filters."""
     kwargs = {}
-    for column in columns:
-        value = args.get(column, default="", type=str)
-        if value != "":
-            kwargs[column] = value
+    
+    # Check if unique_id is provided
+    unique_ids = args.get("unique_ids")
+    if unique_ids:
+        unique_ids_list = unique_ids.split(",")
+        
+        # retrieve metadata for the given unique ids
+        metadata = get_metadata()
+        metadata_rows = metadata[metadata["unique_id"].isin(unique_ids_list)]
+        # print(metadata_rows)
+        
+        if metadata_rows.empty:
+            raise ValueError(f"None of the provided unique IDs were found in metadata.")
 
-    kwargs = _clean_metadata_kwargs(kwargs)
+        # Extract fields from metadata rows and apply filtering
+        for column in columns:
+            if column in metadata_rows.columns:
+                kwargs[column] = metadata_rows[column].unique().tolist()
+            
+        return _clean_metadata_kwargs(kwargs)  
+    
+    else:
+        for column in columns:
+            value = args.get(column, default="", type=str)
+            if value != "":
+                # kwargs[column] = value
+                # Convert comma-separated values into a list for multi-value filters
+                kwargs[column] = value.split(",") if "," in value else value
 
-    return kwargs
+        return _clean_metadata_kwargs(kwargs) 
 
 
 def _clean_metadata_kwargs(kwargs):
+
     """Clean metadata filters"""
+    if kwargs is None:
+        return {}  # Ensure it is always a dictionary
+    
     if "sex" in kwargs:
         value = _normalise_sex_string(kwargs.pop("sex"))
         if value is not None:
@@ -44,6 +70,10 @@ def _clean_metadata_kwargs(kwargs):
 
 
 def _normalise_sex_string(value):
+    # Handle case where value is a list
+    if isinstance(value, list):
+        return [_normalise_sex_string(v) for v in value]  # Recursively normalize each value
+
     not_prefix, value = value.startswith("!"), value.lstrip("!")
     if value.lower().startswith("f"):
         value = "female"

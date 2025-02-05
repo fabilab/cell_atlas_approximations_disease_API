@@ -2,6 +2,7 @@ import pandas as pd
 
 from models.metadata import get_metadata_with_baseline
 from models.baseline import get_differential_baseline
+from models.exceptions import NoContrastingConditionsInADatasetError
 
 
 def get_diff_cell_abundance(
@@ -79,7 +80,13 @@ def get_diff_cell_abundance(
             table_state.reset_index(inplace=True)
             result.append(table_state)
 
-    result = pd.concat(result)
+    if not result:
+        raise NoContrastingConditionsInADatasetError(
+            msg="No datasets found with both baseline/control and contrasting condition data. Cannot calculate differential cell type abundance.",
+            filters=filters
+        )
+    else:
+        result = pd.concat(result)
 
     # Reorder columns so that datset_id is the first column
     cols = result.columns.tolist()

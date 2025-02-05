@@ -44,8 +44,8 @@ def get_metadata(**filters):
     keep = pd.Series(np.ones(len(metadata), dtype=bool), index=metadata.index)
     for key, value in filters.items():
         # Boolean OR
-        if type(value) == str:
-            invert, value = value.startswith("!"), value.lstrip("!")
+        if isinstance(value, str):
+            invert, value = value.startswith("!"), [value.lstrip("!")]
 
         else:
             invert = False
@@ -53,11 +53,16 @@ def get_metadata(**filters):
 
         # Boolean AND between filters
         if key == "sex":
-            # "male" is a substring of "female"
-            keep_key = metadata[key] == value
+            # If value is a single string, use `==`
+            if isinstance(value, str) or len(value) == 1:
+                keep_key = metadata[key] == value[0] if isinstance(value, list) else metadata[key] == value
+            else:
+                # If value is a list, use `.isin()` to prevent shape mismatch
+                keep_key = metadata[key].isin(value)
+    
         else:
             # e.g: ["B cell", "T cell"]
-            if type(value) == list:
+            if isinstance(value, list):
                 keep_key = pd.Series(np.zeros(len(metadata), dtype=bool), index=metadata.index)
                 for v in value:
                     keep_key |= metadata[key].str.contains(v.strip(), case=False)
@@ -72,32 +77,32 @@ def get_metadata(**filters):
 
     # Handle errors separately for each parameter
     if "disease" in filters:
-        if (type(filters["disease"]) == str and metadata["disease"].str.contains(filters["disease"], case=False).sum() == 0)\
-        or (type(filters["disease"], list) and all(metadata["disease"].str.contains(v, case=False).sum() == 0 for v in filters["disease"])):
+        if (isinstance(filters["disease"], str) and metadata["disease"].str.contains(filters["disease"], case=False).sum() == 0) \
+        or (isinstance(filters["disease"], list) and all(metadata["disease"].str.contains(v, case=False).sum() == 0 for v in filters["disease"])):
             raise DiseaseNotFoundError(
                 msg=f"No disease found that matches '{filters['disease']}'.",
                 disease=filters["disease"]
             )
 
     if "cell_type" in filters:
-        if (type(filters["cell_type"]) == str and metadata["cell_type"].str.contains(filters["cell_type"], case=False).sum() == 0)\
-        or (type(filters["cell_type"]) == list) and all(metadata["cell_type"].str.contains(v, case=False).sum() == 0 for v in filters["cell_type"]):
+        if (isinstance(filters["cell_type"], str) and metadata["cell_type"].str.contains(filters["cell_type"], case=False).sum() == 0) \
+        or (isinstance(filters["cell_type"], list) and all(metadata["cell_type"].str.contains(v, case=False).sum() == 0 for v in filters["cell_type"])):
             raise CellTypeNotFoundError(
                 msg=f"No cell type found that matches '{filters['cell_type']}'.",
                 cell_type=filters["cell_type"]
             )
         
     if "tissue" in filters:
-        if (type(filters["tissue"]) == str and metadata["tissue"].str.contains(filters["tissue"], case=False).sum() == 0)\
-        or (type(filters["tissue"]) == list) and all(metadata["tissue"].str.contains(v, case=False).sum() == 0 for v in filters["tissue"]):
+        if (isinstance(filters["tissue"], str) and metadata["tissue"].str.contains(filters["tissue"], case=False).sum() == 0) \
+        or (isinstance(filters["tissue"], list) and all(metadata["tissue"].str.contains(v, case=False).sum() == 0 for v in filters["tissue"])):
             raise TissueNotFoundError(
                 msg=f"No tissue found that matches '{filters['tissue']}'.",
                 tissue=filters["tissue"]
             )
 
     if "development_stage_general" in filters:
-        if (type(filters["development_stage_general"]) == str and metadata["development_stage_general"].str.contains(filters["development_stage_general"], case=False).sum() == 0)\
-        or (type(filters["development_stage_general"]) == list) and all(metadata["development_stage_general"].str.contains(v, case=False).sum() == 0 for v in filters["development_stage_general"]):
+        if (isinstance(filters["development_stage_general"], str) and metadata["development_stage_general"].str.contains(filters["development_stage_general"], case=False).sum() == 0) \
+        or (isinstance(filters["development_stage_general"], list) and all(metadata["development_stage_general"].str.contains(v, case=False).sum() == 0 for v in filters["development_stage_general"])):
             raise DevelopmentStageNotFoundError(
                 msg=f"No development stage found that matches '{filters['development_stage_general']}'.",
                 development_stage_general=filters["development_stage_general"]

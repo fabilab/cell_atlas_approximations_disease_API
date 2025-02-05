@@ -44,6 +44,7 @@ class DifferentialCellTypeAbundance(Resource):
             groupby=groupby,
             **filters,
         )
+        
         if len(diff_cell_abundance) == 0:
             filt_string = ", ".join(filters.keys())
             return {
