@@ -24,7 +24,6 @@ def get_filter_kwargs(args, columns):
         # retrieve metadata for the given unique ids
         metadata = get_metadata()
         metadata_rows = metadata[metadata["unique_id"].isin(unique_ids_list)]
-        # print(metadata_rows.columns)
         
         if metadata_rows.empty:
             raise UniqueIdNotFoundError(
@@ -35,9 +34,15 @@ def get_filter_kwargs(args, columns):
 
         # Extract fields from metadata rows and apply filtering
         for column in columns:
+            if column == 'tissue':
+                column = 'tissue_general'
+            
+            if column == 'development_stage':
+                column = 'development_stage_general'
             if column in metadata_rows.columns:
                 kwargs[column] = metadata_rows[column].unique().tolist()
-         
+
+        print(kwargs)
         return _clean_metadata_kwargs(kwargs)  
     
     else:

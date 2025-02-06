@@ -40,7 +40,7 @@ def get_diff_expression(
         raise ValueError("Either 'number' or 'feature' must be provided, not both.")
     if (number is None or number <= 0) and (feature is None):
         raise ValueError("Either 'number' or 'feature' must be provided.")
-
+    
     if groupby is None:
         groupby = []
     # Ensure the comparison group has the same cell type and tissue (by default)
