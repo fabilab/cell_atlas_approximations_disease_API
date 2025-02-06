@@ -9,7 +9,9 @@ from models.exceptions import (
     SomeFeaturesNotFoundError,
     DevelopmentStageNotFoundError,
     NoMatchingDatasetsError,
-    NoContrastingConditionsInADatasetError
+    NoContrastingConditionsInADatasetError,
+    ParamsConflictError,
+    UniqueIdNotFoundError
 )
 
 class FeatureStringFormatError(Exception):
@@ -139,6 +141,27 @@ def model_exceptions(func):
                 },
             )
             
+        except ParamsConflictError:
+            abort(
+                400,
+                message="You can specify either unique_ids or metadata filters, not both.",
+                error={
+                    "type": "invalid_parameter_combination",
+                    "invalid_parameters": ["unique_ids", "metadata filters"],
+                },
+            )
+
+        except UniqueIdNotFoundError as exc:
+            abort(
+                400,
+                message=f"No unique id found that matches '{exc.unique_ids}'.",
+                error={
+                    "type": "invalid_parameter",
+                    "invalid_parameter": "unique_ids",
+                    "invalid_value": exc.unique_ids,
+                },
+            )
+                    
         except Exception as exc:
             return {
                 "message": str(exc),

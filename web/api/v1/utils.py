@@ -1,29 +1,43 @@
 """Utility functions for the API."""
 from models.metadata import get_metadata
+from models.exceptions import (
+    ParamsConflictError,
+    UniqueIdNotFoundError,
+)
 
 # FIXME: there is a logical fallacy in allowing both unique_ids and metadta filters, deal with it at some point
 def get_filter_kwargs(args, columns):
     """Return a dictionary of obs metadata keyword arguments to be used as database filters."""
     kwargs = {}
     
-    # Check if unique_id is provided
+    # if unique ids are provided
     unique_ids = args.get("unique_ids")
+    
     if unique_ids:
+        if len(args) > 1:
+            raise ParamsConflictError(
+                msg=f"You can specify either unique_ids or metadata filters, not both"
+            )
+       
         unique_ids_list = unique_ids.split(",")
         
         # retrieve metadata for the given unique ids
         metadata = get_metadata()
         metadata_rows = metadata[metadata["unique_id"].isin(unique_ids_list)]
-        # print(metadata_rows)
+        # print(metadata_rows.columns)
         
         if metadata_rows.empty:
-            raise ValueError(f"None of the provided unique IDs were found in metadata.")
+            raise UniqueIdNotFoundError(
+                msg=f"None of the provided unique IDs were found in metadata",
+                unique_ids=unique_ids_list 
+            )
+        
 
         # Extract fields from metadata rows and apply filtering
         for column in columns:
             if column in metadata_rows.columns:
                 kwargs[column] = metadata_rows[column].unique().tolist()
-            
+         
         return _clean_metadata_kwargs(kwargs)  
     
     else:

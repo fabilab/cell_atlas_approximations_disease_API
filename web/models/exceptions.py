@@ -37,3 +37,13 @@ class NoContrastingConditionsInADatasetError(ValueError):
     def __init__(self, msg, filters):
         self.filters = filters
         super().__init__(msg)
+
+class ParamsConflictError(Exception):
+    def __init__(self, msg):
+        super().__init__(msg)
+        
+class UniqueIdNotFoundError(KeyError):
+    def __init__(self, msg, unique_ids):
+        self.unique_ids = unique_ids
+        super().__init__(self,msg)
+ 
