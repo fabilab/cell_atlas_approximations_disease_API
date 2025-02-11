@@ -1,6 +1,8 @@
 """Utility functions for the API."""
+import pandas as pd
 from models.metadata import get_metadata
 from models.exceptions import (
+    NoContrastingConditionsInADatasetError,
     ParamsConflictError,
     UniqueIdNotFoundError,
 )
@@ -10,11 +12,13 @@ def get_filter_kwargs(args, columns):
     """Return a dictionary of obs metadata keyword arguments to be used as database filters."""
     kwargs = {}
     
-    # if unique ids are provided
     unique_ids = args.get("unique_ids")
     
     if unique_ids:
-        if len(args) > 1:
+        # Allow 'features' but not other metadata filters for specific functions, for example: average, dotplot ...
+        allowed_keys = {"features", "unique_ids"}
+        extra_keys = set(args.keys()) - allowed_keys
+        if extra_keys:
             raise ParamsConflictError(
                 msg=f"You can specify either unique_ids or metadata filters, not both"
             )
@@ -24,15 +28,51 @@ def get_filter_kwargs(args, columns):
         # retrieve metadata for the given unique ids
         metadata = get_metadata()
         metadata_rows = metadata[metadata["unique_id"].isin(unique_ids_list)]
-        
+
         if metadata_rows.empty:
             raise UniqueIdNotFoundError(
                 msg=f"None of the provided unique IDs were found in metadata",
                 unique_ids=unique_ids_list 
             )
         
+        # Ensure each unique_id has a matching row with the same attributes except for disease.
+        # This check is required for differential analysis, which needs both a disease and a normal (baseline) condition.
+        for _, row in metadata_rows.iterrows():
+            matching_rows = metadata[
+                (metadata["dataset_id"] == row["dataset_id"]) &
+                (metadata["cell_type"] == row["cell_type"]) &
+                (metadata["tissue_general"] == row["tissue_general"]) &
+                (metadata["development_stage_general"] == row["development_stage_general"]) &
+                (metadata["sex"] == row["sex"]) &
+                # Ensure one of them is "normal", in some edge cases, a dataset contains more than one disease conditions bit without normal, e.g: uids=8a859cb4f410fe3cb5a482896522b97b
+                ((metadata["disease"] != row["disease"]) &
+                ((metadata["disease"] == "normal") | (row["disease"] == "normal"))) 
+            ]
 
-        # Extract fields from metadata rows and apply filtering
+            if matching_rows.empty:
+                raise NoContrastingConditionsInADatasetError(
+                    msg=(
+                        "Differential analysis cannot be performed."
+                        f"No contrasting condition found for unique_id '{row['unique_id']}' in dataset '{row['dataset_id']}'. "
+                    ),
+                    filters={"provided_unique_ids": unique_ids_list}
+                )
+        
+        # If unique_ids include only normal samples, find corresponding disease cases
+        normal_rows = metadata_rows[metadata_rows["disease"] == "normal"]
+        if not normal_rows.empty:
+            # Pair normal samples with disease samples from the same category
+            disease_rows = metadata.merge(
+                normal_rows,
+                on=["dataset_id", "cell_type", "tissue_general", "development_stage_general", "sex"],
+                suffixes=("", "normal"),
+            ).query("disease != 'normal'")[metadata.columns]
+            
+            metadata_rows_filtered = metadata_rows[metadata_rows["disease"] != "normal"]
+
+            metadata_rows = pd.concat([metadata_rows_filtered, disease_rows], ignore_index=True)
+            
+        # Extract metadata filters
         for column in columns:
             if column == 'tissue':
                 column = 'tissue_general'
@@ -42,25 +82,24 @@ def get_filter_kwargs(args, columns):
             if column in metadata_rows.columns:
                 kwargs[column] = metadata_rows[column].unique().tolist()
 
-        print(kwargs)
         return _clean_metadata_kwargs(kwargs)  
     
-    else:
-        for column in columns:
-            value = args.get(column, default="", type=str)
-            if value != "":
-                # kwargs[column] = value
-                # Convert comma-separated values into a list for multi-value filters
-                kwargs[column] = value.split(",") if "," in value else value
+    # Handle non-unique_ids filtering
+    for column in columns:
+        value = args.get(column, default="", type=str)
+        if value != "":
+            # kwargs[column] = value
+            # Convert comma-separated values into a list for multi-value filters
+            kwargs[column] = value.split(",") if "," in value else value
 
-        return _clean_metadata_kwargs(kwargs) 
+    return _clean_metadata_kwargs(kwargs) 
 
 
 def _clean_metadata_kwargs(kwargs):
 
     """Clean metadata filters"""
     if kwargs is None:
-        return {}  # Ensure it is always a dictionary
+        return {}
     
     if "sex" in kwargs:
         value = _normalise_sex_string(kwargs.pop("sex"))
@@ -75,15 +114,14 @@ def _clean_metadata_kwargs(kwargs):
         kwargs["tissue_general"] = kwargs.pop("tissue")
         
     if "unique_ids" in kwargs:
+        if len(kwargs) > 1:
+            raise ValueError(
+            "You can only specify either unique_ids or metadata filters, not both"
+        )
         unique_ids_str = kwargs.pop("unique_ids")
         # Skip if empty string
         if unique_ids_str:
             kwargs["unique_ids"] = unique_ids_str.split(",")
-
-    if "unique_ids" in kwargs and len(kwargs) > 1:
-        raise ValueError(
-            "You can specify either unique_ids or metadata filters, not both"
-        )
 
     return kwargs
 

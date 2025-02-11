@@ -136,7 +136,7 @@ def model_exceptions(func):
                 404,
                 message=exc.args[0],
                 error={
-                    "type": "no_results",
+                    "type": "single_condition_dataset",
                     "filters_used": exc.filters
                 },
             )

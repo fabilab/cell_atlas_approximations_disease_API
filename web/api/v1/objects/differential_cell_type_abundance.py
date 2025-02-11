@@ -38,7 +38,6 @@ class DifferentialCellTypeAbundance(Resource):
                 "unique_ids",
             ],
         )
-
         diff_cell_abundance = get_diff_cell_abundance(
             differential_axis=differential_axis,
             groupby=groupby,
