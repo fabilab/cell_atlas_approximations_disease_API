@@ -27,7 +27,7 @@ class DifferentialGeneExpression(Resource):
                 "tissue",
                 "sex",
                 "development_stage",
-                "unique_ids",
+                # "unique_ids",
             ],
         )
         
