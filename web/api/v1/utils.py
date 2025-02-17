@@ -1,17 +1,51 @@
 """Utility functions for the API."""
-
+import pandas as pd
+from models.metadata import get_metadata
+from models.exceptions import (
+    NoContrastingConditionsInADatasetError,
+    ParamsConflictError,
+    UniqueIdNotFoundError,
+)
 
 # FIXME: there is a logical fallacy in allowing both unique_ids and metadta filters, deal with it at some point
 def get_filter_kwargs(args, columns):
     """Return a dictionary of obs metadata keyword arguments to be used as database filters."""
     kwargs = {}
+    
+    unique_ids = args.get("unique_ids")
+    print("get filter", args)
+    
+    if unique_ids:
+        # Allow 'features' but not other metadata filters for specific functions, for example: average, dotplot ...
+        allowed_keys = {"features", "unique_ids"}
+        extra_keys = set(args.keys()) - allowed_keys
+        if extra_keys:
+            raise ParamsConflictError(
+                msg=f"You can specify either unique_ids or metadata filters, not both"
+            )
+       
+        unique_ids_list = unique_ids.split(",")
+    
+        # retrieve metadata for the given unique ids
+        metadata = get_metadata()
+        metadata_rows = metadata[metadata["unique_id"].isin(unique_ids_list)]
+
+        if metadata_rows.empty:
+            raise UniqueIdNotFoundError(
+                msg=f"None of the provided unique IDs were found in metadata",
+                unique_ids=unique_ids_list 
+            )
+        kwargs["unique_ids"] = unique_ids_list
+        return kwargs  # ✅ If `unique_ids` are used, skip processing other filters
+            
+    # If unique_ids are NOT provided, process metadata filters normally
     for column in columns:
         value = args.get(column, default="", type=str)
         if value != "":
             kwargs[column] = value
 
     kwargs = _clean_metadata_kwargs(kwargs)
-
+        
     return kwargs
 
 

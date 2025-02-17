@@ -11,20 +11,44 @@ def get_measurement(features, kind, groupby=None, **filters):
     """Compute the highest expressors of a given feature (gene) across all diseases and datasets.
 
     Parameters:
-        features (str): The feature of interest.
+        features (list): List of genes/features to query.
+        kind (string): The type of measurement (e.g., "average", "fraction").
+        groupby (optional): Variables to group by when aggregating.
+        filters (dict): Metadata filters, including `unique_ids` if provided.
 
     Returns:
         pd.DataFrame
     """
     if groupby is None:
         groupby = []
+
+    # If `unique_ids` are provided, extract metadata filters from them
+    if "unique_ids" in filters:
+        unique_ids = filters.pop("unique_ids")
+
+        # Retrieve metadata for the given `unique_ids`
+        metadata = get_metadata()
+        meta = metadata[metadata["unique_id"].isin(unique_ids)]
+
+        if meta.empty:
+            raise ValueError(f"No metadata found for the provided unique IDs: {unique_ids}")
+
+        # Create a mapping of metadata per unique_id
+        metadata_map = meta.set_index("unique_id").to_dict(orient="index")
+        # Extract dataset-specific filters from metadata
+        metadata_columns = [col for col in meta.columns if col not in {"unique_id", "dataset_id", "cell_count"}]
+        filters = {col: meta[col].unique().tolist() for col in metadata_columns}
+    
+    else:
+        meta = get_metadata(**filters)
+        metadata_map = {}  # Not needed if unique_ids are not used
+        metadata_columns = list(filters.keys())
+        
     if "cell_type" not in groupby:
         groupby = ["cell_type"] + groupby
         for i, name in enumerate(groupby):
             if name == "tissue":
                 groupby[i] = "tissue_general"
-
-    meta = get_metadata(**filters)
 
     # For each filter, we need to make sure that the data is not coarse grained before we apply it
     filter_cols = list(filters.keys())
@@ -54,7 +78,8 @@ def get_measurement(features, kind, groupby=None, **filters):
             groupby=groupby_with_filters,
             features=features
         )
-            
+        
+        # DO NOT use `dataset_id` as a filter, but keep it in the response
         adata.obs["dataset_id"] = dataset_id
 
         # Filter and coarse grain, in that order
@@ -72,6 +97,20 @@ def get_measurement(features, kind, groupby=None, **filters):
         obs_names = pd.Index(obs_names).drop_duplicates()
 
         res = adata.obs.copy()
+        
+        # Match metadata per unique_id
+        if "unique_ids" in filters:
+            for unique_id in unique_ids:
+                if unique_id in metadata_map:
+                    res.update(metadata_map[unique_id])  # Assign correct metadata per unique_id
+
+        # Match metadata per dataset_id for non-unique_id queries
+        else:
+            matching_meta = meta[meta["dataset_id"] == dataset_id]
+            for field in metadata_columns + ["dataset_id"]:
+                if field in matching_meta.columns and field not in res.columns:
+                    res[field] = matching_meta[field].values[0]  # Assign correct metadata for this dataset
+
         for feature in features:
             if kind == "fraction":
                 resi = np.asarray(adata[:, feature].layers["fraction"]).ravel()

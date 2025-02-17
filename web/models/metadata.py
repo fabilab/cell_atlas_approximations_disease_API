@@ -39,6 +39,9 @@ def get_metadata(**filters):
 
     keep = pd.Series(np.ones(len(metadata), dtype=bool), index=metadata.index)
     for key, value in filters.items():
+        if key == "unique_ids":
+            continue
+        
         # Boolean OR
         invert, value = value.startswith("!"), value.lstrip("!")
 
