@@ -26,7 +26,8 @@ def get_measurement(features, kind, groupby=None, **filters):
     use_unique_ids = "unique_ids" in filters
 
     if use_unique_ids:
-        unique_ids = filters.pop("unique_ids")
+        # remove empty space
+        unique_ids = [uid.strip() for uid in filters.pop("unique_ids") if isinstance(uid, str)]
 
         # Retrieve metadata for the given `unique_ids`
         metadata = get_metadata()
