@@ -21,9 +21,11 @@ def get_measurement(features, kind, groupby=None, **filters):
     """
     if groupby is None:
         groupby = []
+        
+    # Track whether unique_ids were provided
+    use_unique_ids = "unique_ids" in filters
 
-    # If `unique_ids` are provided, extract metadata filters from them
-    if "unique_ids" in filters:
+    if use_unique_ids:
         unique_ids = filters.pop("unique_ids")
 
         # Retrieve metadata for the given `unique_ids`
@@ -41,9 +43,9 @@ def get_measurement(features, kind, groupby=None, **filters):
     
     else:
         meta = get_metadata(**filters)
-        metadata_map = {}  # Not needed if unique_ids are not used
+        metadata_map = {} 
         metadata_columns = list(filters.keys())
-        
+  
     if "cell_type" not in groupby:
         groupby = ["cell_type"] + groupby
         for i, name in enumerate(groupby):
@@ -54,9 +56,15 @@ def get_measurement(features, kind, groupby=None, **filters):
     filter_cols = list(filters.keys())
     filter_cols_additional = [col for col in filter_cols if col not in groupby]
     groupby_with_filters = groupby + filter_cols_additional
-
+    
+    # Determine whether to group by `unique_id` or `dataset_id`
+    grouping_column = "unique_id" if use_unique_ids else "dataset_id"
+    
     result = []
-    for dataset_id, obs in meta.groupby("dataset_id"):
+    for group_key, obs in meta.groupby(grouping_column):
+        # Retrieve the correct dataset_id (important when grouping by `unique_id`)
+        dataset_id = obs["dataset_id"].values[0]
+
         # All the entries in obs are guaranteed to have nonzero cells for both normal and disease
         approx = scquill.Approximation.read_h5(get_dataset_path(dataset_id))
 
@@ -73,17 +81,16 @@ def get_measurement(features, kind, groupby=None, **filters):
                 msg=f"Some features could not be found in dataset '{dataset_id}': {', '.join(invalid_features)}.",
                 features=invalid_features
             )
-        
+
         adata = approx.to_anndata(
             groupby=groupby_with_filters,
             features=features
         )
-        
-        # DO NOT use `dataset_id` as a filter, but keep it in the response
+
+        # Ensure `dataset_id` is included in the response
         adata.obs["dataset_id"] = dataset_id
 
         # Filter and coarse grain, in that order
-        # dataset_id is intrinsically filtered by the for loop
         if len(filter_cols) > 0 and filter_cols != ["dataset_id"]:
             obs_filter_unique = obs.set_index(filter_cols).index.drop_duplicates()
             idx_obs = adata.obs_names[
@@ -91,26 +98,24 @@ def get_measurement(features, kind, groupby=None, **filters):
             ]
             adata = adata[idx_obs]
             adata = scquill.utils.coarse_grain_anndata(adata, groupby=groupby)
-
-        # Now we can index the adata properly
-        obs_names = obs[groupby].agg("\t".join, axis=1).values
-        obs_names = pd.Index(obs_names).drop_duplicates()
-
+            
         res = adata.obs.copy()
-        
-        # Match metadata per unique_id
-        if "unique_ids" in filters:
-            for unique_id in unique_ids:
-                if unique_id in metadata_map:
-                    res.update(metadata_map[unique_id])  # Assign correct metadata per unique_id
 
-        # Match metadata per dataset_id for non-unique_id queries
+        # Assign metadata per `unique_id`
+        if use_unique_ids:
+            if group_key in metadata_map:
+                for field, value in metadata_map[group_key].items():
+                    res.loc[:, field] = value
+
+
+        # Assign metadata per dataset for non-unique_id queries
         else:
             matching_meta = meta[meta["dataset_id"] == dataset_id]
-            for field in metadata_columns + ["dataset_id"]:
+            for field in metadata_columns + ["dataset_id"]:  # Ensure dataset_id is included
                 if field in matching_meta.columns and field not in res.columns:
-                    res[field] = matching_meta[field].values[0]  # Assign correct metadata for this dataset
+                    res[field] = matching_meta[field].values[0]
 
+        # Add gene expression values
         for feature in features:
             if kind == "fraction":
                 resi = np.asarray(adata[:, feature].layers["fraction"]).ravel()

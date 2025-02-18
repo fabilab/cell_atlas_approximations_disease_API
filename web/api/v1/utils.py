@@ -13,7 +13,6 @@ def get_filter_kwargs(args, columns):
     kwargs = {}
     
     unique_ids = args.get("unique_ids")
-    print("get filter", args)
     
     if unique_ids:
         # Allow 'features' but not other metadata filters for specific functions, for example: average, dotplot ...
@@ -36,7 +35,7 @@ def get_filter_kwargs(args, columns):
                 unique_ids=unique_ids_list 
             )
         kwargs["unique_ids"] = unique_ids_list
-        return kwargs  # ✅ If `unique_ids` are used, skip processing other filters
+        return kwargs
             
     # If unique_ids are NOT provided, process metadata filters normally
     for column in columns:
