@@ -2,18 +2,19 @@ import numpy as np
 import pandas as pd
 import scquill
 
-from models.metadata import get_metadata
+from models.metadata import get_metadata, get_metadata_with_baseline
 from models.paths import get_dataset_path
 from models.exceptions import SomeFeaturesNotFoundError
 
 
-def get_measurement(features, kind, groupby=None, **filters):
+def get_measurement(features, kind, groupby=None, include_normal=False, **filters):
     """Compute the highest expressors of a given feature (gene) across all diseases and datasets.
 
     Parameters:
         features (list): List of genes/features to query.
         kind (string): The type of measurement (e.g., "average", "fraction").
         groupby (optional): Variables to group by when aggregating.
+        include_normal (bool): Whether to include corresponding normal condition values.
         filters (dict): Metadata filters, including `unique_ids` if provided.
 
     Returns:
@@ -21,6 +22,10 @@ def get_measurement(features, kind, groupby=None, **filters):
     """
     if groupby is None:
         groupby = []
+
+   # Ensure `include_normal` is only applied when a disease condition is specified
+    if include_normal and "disease" not in filters:
+        include_normal = False
         
     # Track whether unique_ids were provided
     use_unique_ids = "unique_ids" in filters
@@ -43,9 +48,21 @@ def get_measurement(features, kind, groupby=None, **filters):
         filters = {col: meta[col].unique().tolist() for col in metadata_columns}
     
     else:
-        meta = get_metadata(**filters)
-        metadata_map = {} 
-        metadata_columns = list(filters.keys())
+        # ✅ Retrieve all metadata (needed to get normal condition separately)
+        if include_normal:
+            meta = get_metadata_with_baseline("disease", **filters)  # Includes normal condition
+            
+            dataset_counts = meta.groupby(['dataset_id'])['disease'].nunique()
+            datasets_with_both = set(dataset_counts[dataset_counts > 1].index)
+
+            # Step 2: Filter the dataframe to keep only rows with dataset_ids that appear in both groups
+            meta = meta[meta['dataset_id'].isin(datasets_with_both)]
+            
+            metadata_columns = list(filters.keys())
+        else:
+            meta = get_metadata(**filters)
+            metadata_map = {} 
+            metadata_columns = list(filters.keys())
   
     if "cell_type" not in groupby:
         groupby = ["cell_type"] + groupby
@@ -119,10 +136,9 @@ def get_measurement(features, kind, groupby=None, **filters):
         # Add gene expression values
         for feature in features:
             if kind == "fraction":
-                resi = np.asarray(adata[:, feature].layers["fraction"]).ravel()
+                res[feature] = np.asarray(adata[:, feature].layers["fraction"]).ravel()
             else:
-                resi = np.asarray(adata[:, feature].X).ravel()
-            res[feature] = resi
+                res[feature] = np.asarray(adata[:, feature].X).ravel()
         result.append(res)
 
     result = pd.concat(result)
@@ -130,24 +146,26 @@ def get_measurement(features, kind, groupby=None, **filters):
     return result
 
 
-def get_average(features, groupby=None, **filters):
-    return get_measurement(features, kind="average", groupby=groupby, **filters)
+def get_average(features, groupby=None,  include_normal=False, **filters):
+    return get_measurement(features, kind="average", groupby=groupby, include_normal=include_normal, **filters)
 
 
-def get_fraction_detected(features, groupby=None, **filters):
-    return get_measurement(features, kind="fraction", groupby=groupby, **filters)
+def get_fraction_detected(features, groupby=None, include_normal=False, **filters):
+    return get_measurement(features, kind="fraction", groupby=groupby, include_normal=include_normal, **filters)
 
 
-def get_dotplot(features, groupby=None, **filters):
+def get_dotplot(features, groupby=None, include_normal=False, **filters):
     """Get both average measurement and fraction detected at once."""
     average = get_average(
         features,
         groupby=groupby,
+        include_normal=include_normal,
         **filters,
     )
     fraction = get_fraction_detected(
         features,
         groupby=groupby,
+        include_normal=include_normal,
         **filters,
     )
     fraction.rename(columns={fea: f"fraction_{fea}" for fea in features}, inplace=True)
