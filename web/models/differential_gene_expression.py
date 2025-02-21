@@ -5,6 +5,9 @@ import scquill
 from models.paths import get_dataset_path
 from models.baseline import get_differential_baseline
 from models.metadata import get_metadata_with_baseline
+from models.exceptions import (
+    NoContrastingConditionsInADatasetError
+)
 
 
 _differential_baselines = {
@@ -77,6 +80,7 @@ def get_diff_expression(
             .sum()
             .unstack(differential_axis, fill_value=0)
         )
+        cell_types_to_keep = table.index.get_level_values('cell_type').unique().tolist()
         table["dataset_id"] = dataset_id
 
         # All the entries in obs are guaranteed to have nonzero cells for both normal and disease
@@ -85,14 +89,20 @@ def get_diff_expression(
         adata = approx.to_anndata(
             groupby=groupby + [differential_axis],
         )
+        
+        # In the previous code, the calculation is perform without filtering cell type provided by the user,
+        # There we  
+        mask = adata.obs['cell_type'].isin(cell_types_to_keep)
+    
+        filtered_adata = adata[mask].copy()
 
         if feature is not None:
-            adata = adata[:, feature]
+            filtered_adata = filtered_adata[:, feature]
 
         obs_names = obs[groupby].agg("\t".join, axis=1).values
 
         # Split between normal and disease
-        adata_baseline = adata[adata.obs[differential_axis] == baseline]
+        adata_baseline = filtered_adata[filtered_adata.obs[differential_axis] == baseline]
         adata_baseline.obs.index = pd.Index(
             adata_baseline.obs[groupby].agg("\t".join, axis=1).values,
             name="category",
@@ -100,14 +110,16 @@ def get_diff_expression(
         for state in differential_states:
             if state == baseline:
                 continue
-            adata_state = adata[adata.obs[differential_axis] == state]
+            adata_state = filtered_adata[filtered_adata.obs[differential_axis] == state]
             adata_state.obs.index = pd.Index(
                 adata_state.obs[groupby].agg("\t".join, axis=1).values,
                 name="category",
             )
             # Ok, now there might be cell types that are missing in one of the conditions, so we need to
             # use the obs variable to filter these adata
-            obs_namesd = list(set(obs_names) & set(adata_state.obs_names))
+            # obs_namesd = list(set(obs_names) & set(adata_state.obs_names))
+            
+            obs_namesd = list(set(adata_baseline.obs_names) & set(adata_state.obs_names))
             adata1d = adata_baseline[obs_namesd]
             adata2 = adata_state[obs_namesd]
 
@@ -124,7 +136,13 @@ def get_diff_expression(
                 res["state"] = state
                 res["baseline"] = baseline
             result.extend(result_dataset_id)
-
+    
+    if len(result) == 0:
+        raise NoContrastingConditionsInADatasetError(
+            msg=f"No datasets can be found with more than one value along the '{differential_axis}' axis after filtering",
+            filters=filters
+        )
+    
     result = pd.DataFrame(result).sort_values("metric", ascending=False)
 
     return result

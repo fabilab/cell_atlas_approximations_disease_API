@@ -20,26 +20,14 @@ def get_diff_cell_abundance(
     """
     if groupby is None:
         groupby = []
-        
-    # Always include cell_type in grouping
     if "cell_type" not in groupby:
         groupby = ["cell_type"] + groupby
-    
-    # Add extra grouping columns if they're used in filters
-    # (tissue, sex, development_stage)
-    if "tissue_general" in filters and "tissue_general" not in groupby:
-        groupby = ["tissue_general"] + groupby
+        for i, name in enumerate(groupby):
+            if name == "tissue":
+                groupby[i] = "tissue_general"
     
     if "sex" in filters and "sex" not in groupby:
         groupby = ["sex"] + groupby
-    
-    if "development_stage_general" in filters and "development_stage_general" not in groupby:
-        groupby = ["development_stage_general"] + groupby
-        
-    if differential_axis in groupby:
-        raise ValueError(
-            f"{differential_axis} cannot be a groupby variable and the differential axis at the same time"
-        )
 
     baseline = get_differential_baseline(differential_axis)
     meta = get_metadata_with_baseline(differential_axis, **filters)

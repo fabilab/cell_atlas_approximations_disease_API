@@ -27,7 +27,7 @@ class Metadata(Resource):
                 "cell_type",
                 "tissue",
                 "sex",
-                "development_stage_general",
+                "development_stage",
             ],
         )
         matching_metadata = get_metadata(**filters)
