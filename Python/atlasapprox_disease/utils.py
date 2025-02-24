@@ -2,45 +2,31 @@ import pandas as pd
 import requests
 from typing import Union, List
 
-from atlasapprox_disease import BadRequestError
+from .exceptions import raiseExceptions
 
-
-def _fetch_metadata(api, disease: str, cell_type: str, tissue: str, sex: str, development_stage: str):
+def _fetch_metadata(api, **kwargs):
     """
     Fetch metadata from the API.
 
     Return:
         A pandas.DataFrame with metadata that satisfy the filters
+    
+    Raises:
+        BadRequestError: If the API request fails.
     """
+    
     response = requests.get(
         api.baseurl + "metadata",
-        params={
-            "disease": disease,
-            "cell_type": cell_type,
-            "tissue": tissue,
-            "sex": sex,
-            "development_stage": development_stage,
-        },
+        params=kwargs
     )
 
     if response.ok:
-        resjson = response.json()
-        df = pd.DataFrame(resjson)
-        return df
+        return pd.DataFrame(response.json())
     else:
-        raise BadRequestError(response.json()["message"])
+        return response.json()
 
 
-def _fetch_differential_cell_type_abundance(
-    api,
-    differential_axis: str,
-    disease: str,
-    cell_type: str,
-    tissue: str,
-    sex: str,
-    development_stage: str,
-    unique_ids: Union[str, List[str]],
-):
+def _fetch_differential_cell_type_abundance(api, **kwargs):
     """
     Fetch differential cell type abundance data from the API.
 
@@ -49,37 +35,15 @@ def _fetch_differential_cell_type_abundance(
     """
     response = requests.post(
         api.baseurl + "differential_cell_type_abundance",
-        params={
-            "differential_axis": differential_axis,
-            "disease": disease,
-            "cell_type": cell_type,
-            "tissue": tissue,
-            "sex": sex,
-            "development_stage": development_stage,
-            "unique_ids": unique_ids,
-        },
+        params=kwargs
     )
     if response.ok:
-        resjson = response.json()
-        df = pd.DataFrame(resjson)
-        return df
+        return pd.DataFrame(response.json())
     else:
-        raise BadRequestError(response.json()["message"])
+        return response.json()
 
 
-def _fetch_differential_gene_expression(
-    api,
-    differential_axis: str,
-    disease: str,
-    cell_type: str,
-    tissue: str,
-    sex: str,
-    development_stage: str,
-    top_n: int,
-    feature: str,
-    method: str,
-    unique_ids: Union[str, List[str]],
-):
+def _fetch_differential_gene_expression(api, **kwargs):
     """
     Fetch top N differential expressed genes or expression of queried genes from the API.
 
@@ -89,136 +53,81 @@ def _fetch_differential_gene_expression(
     """
     response = requests.post(
         api.baseurl + "differential_gene_expression",
-        params={
-            "differential_axis": differential_axis,
-            "disease": disease,
-            "cell_type": cell_type,
-            "tissue": tissue,
-            "sex": sex,
-            "development_stage": development_stage,
-            "top_n": top_n,
-            "feature": feature,
-            "method": method,
-            "unique_ids": unique_ids,
-        },
+        params=kwargs
     )
     if response.ok:
-        resjson = response.json()
-        df = pd.DataFrame(resjson)
-        return df
+        return pd.DataFrame(response.json())
     else:
-        raise BadRequestError(response.json()["message"])
+        return response.json()
 
 
-def _fetch_highest_measurement(api, feature: str, number: int):
+
+def _fetch_highest_measurement(api, **kwargs):
     """
-    Fetch highest measurement from the API.
+    Fetch the highest measurement of a specific feature from the API.
 
     Return:
-        A pandas.DataFrame with highest measurement for a given gene
+        A DataFrame containing the highest measurements.
     """
     response = requests.post(
         api.baseurl + "highest_measurement",
-        params={
-            "feature": feature,
-            "number": number,
-        },
+        params=kwargs
     )
-
     if response.ok:
-        resjson = response.json()
-        df = pd.DataFrame(resjson)
-        return df
+        return pd.DataFrame(response.json())
     else:
-        raise BadRequestError(response.json()["message"])
+        return response.json()
 
-
-def _fetch_average(
-    api,
-    features: str,
-    disease: str = None,
-    cell_type: str = None,
-    tissue: str = None,
-    sex: str = None,
-    development_stage: str = None,
-):
-    """Fetch the average expression of specific features from the API."""
-
+def _fetch_average(api, **kwargs):
+    """
+    Fetch the average expression of specific features from the API.
+    
+    Returns:
+        A DataFrame containing the average expression values.
+    """
     response = requests.post(
         api.baseurl + "average",
-        params={
-            "features": features,
-            "disease": disease,
-            "cell_type": cell_type,
-            "tissue": tissue,
-            "sex": sex,
-            "development_stage": development_stage,
-        },
+        params=kwargs
     )
-
     if response.ok:
-        resjson = response.json()
-        df = pd.DataFrame(resjson)
-        return df
+        return pd.DataFrame(response.json())
     else:
-        raise BadRequestError(response.json()["message"])
+        return response.json()
     
-def _fetch_fraction_detected(
-    api,
-    features: str,
-    disease: str = None,
-    cell_type: str = None,
-    tissue: str = None,
-    sex: str = None,
-    development_stage: str = None,
-):
-    """Fetch the fraction of specific features from the API."""
+def _fetch_fraction_detected(api, **kwargs):
+    """Fetch the fraction of specific features detected in datasets.
 
+    Args:
+        api: The API object making the request.
+        **kwargs: Optional filter arguments.
+
+    Returns:
+        A DataFrame containing the fraction detected.
+    """
     response = requests.post(
         api.baseurl + "fraction_detected",
-        params={
-            "features": features,
-            "disease": disease,
-            "cell_type": cell_type,
-            "tissue": tissue,
-            "sex": sex,
-            "development_stage": development_stage,
-        },
+        params=kwargs
     )
-
     if response.ok:
-        resjson = response.json()
-        df = pd.DataFrame(resjson)
-        return df
+        return pd.DataFrame(response.json())
     else:
-        raise BadRequestError(response.json()["message"])
+        return response.json()
 
-def _fetch_dotplot(
-    api,
-    features: str,
-    disease: str = None,
-    cell_type: str = None,
-    tissue: str = None,
-    sex: str = None,
-    development_stage: str = None,
-):
-    """Fetch dot plot data for the specified features from the API."""
+def _fetch_dotplot(api, **kwargs):
+    """Fetch dot plot data for the specified features from the API.
 
+    Args:
+        api: The API object making the request.
+        **kwargs: Optional filter arguments.
+
+    Returns:
+        A DataFrame containing dotplot data.
+    """
     response = requests.post(
         api.baseurl + "dotplot",
-        params={
-            "features": features,
-            "disease": disease,
-            "cell_type": cell_type,
-            "tissue": tissue,
-            "sex": sex,
-            "development_stage": development_stage,
-        },
+        params=kwargs
     )
-
     if response.ok:
-        resjson = response.json()
-        df = pd.DataFrame(resjson)
-        return df
+        return pd.DataFrame(response.json())
     else:
-        raise BadRequestError(response.json()["message"])
+        return response.json()

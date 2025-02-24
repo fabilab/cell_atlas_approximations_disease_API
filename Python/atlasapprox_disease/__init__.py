@@ -3,6 +3,7 @@ Cell atlas approximations(disease) - Python API Interface
 """
 
 import os
+import pandas as pd
 from typing import Union, List
 
 from atlasapprox_disease.exceptions import BadRequestError
@@ -70,7 +71,7 @@ class API:
         tissue: str = None,
         sex: str = None,
         development_stage: str = None,
-    ):
+    ) -> pd.DataFrame:
         """Fetch metadata based on various filters
 
         Args:
@@ -81,9 +82,9 @@ class API:
             development_stage: Filter by development stage (e.g., 'adult', optional).
 
         Returns:
-            A list of metadata records matching the filters.
+            pd.DataFrame: A DataFrame containing the metadata.
         """
-        return _fetch_metadata(self, disease, cell_type, tissue, sex, development_stage)
+        return _fetch_metadata(self, disease=disease, cell_type=cell_type, tissue=tissue, sex=sex, development_stage=development_stage)
 
     def differential_cell_type_abundance(
         self,
@@ -93,8 +94,7 @@ class API:
         tissue: str = None,
         sex: str = None,
         development_stage: str = None,
-        unique_ids: Union[str, List[str]] = None,
-    ):
+    ) -> pd.DataFrame:
         """Get differential cell type abundance between conditions.
 
         Args:
@@ -104,34 +104,18 @@ class API:
             tissue: Filter by tissue (optional)
             sex: Filter by sex (optional)
             development_stage: Filter by development stage (optional)
-            unique_ids: Filter by specific dataset IDs. Can be a comma-separated string or list of strings (optional)
 
         Returns:
-            A list of differential abundance results
-
-        Raises:
-            ValueError: If both unique_ids and other filters are specified
+            pd.DataFrame: A DataFrame containing the differential cell type abundance.
         """
-        # Validate that unique_ids is not used with other filters
-        if unique_ids is not None and any(
-            [
-                x is not None
-                for x in [disease, cell_type, tissue, sex, development_stage]
-            ]
-        ):
-            raise ValueError(
-                "You can specify either unique_ids or metadata filters, not both"
-            )
-
         return _fetch_differential_cell_type_abundance(
             self,
-            differential_axis,
-            disease,
-            cell_type,
-            tissue,
-            sex,
-            development_stage,
-            unique_ids,
+            differential_axis=differential_axis,
+            disease=disease,
+            cell_type=cell_type,
+            tissue=tissue,
+            sex=sex,
+            development_stage=development_stage,
         )
 
     def differential_gene_expression(
@@ -142,12 +126,11 @@ class API:
         tissue: str = None,
         sex: str = None,
         development_stage: str = None,
-        top_n: int = None,
+        top_n: int = 10,
         feature: str = None,
         method: str = "delta_fraction",
-        unique_ids: Union[str, List[str]] = None,
-    ):
-        """Get differential gene expression between disease and normal conditions.
+    ) -> pd.DataFrame:
+        """Get differential gene expression between two conditions.
 
         Args:
             differential_axis: The axis to compute differential abundance on (default: "disease")
@@ -157,35 +140,30 @@ class API:
             sex: Filter by sex (optional)
             development_stage: Filter by development stage (optional)
             top_n: Top N differentially UP regulated genes +  Top N differentially DOWN regulated genes  (default: 10)
-            feature: Query expression level difference for a given feature (optional)
-            method: Calculation of differential expression [delta_fraction|ratio_average] (default: delta_fraction)
-            unique_ids: Filter by specific dataset IDs. Can be a comma-separated string or list of strings (optional)
-
+            feature: Specific feature to query. (optional)
+            method: Method of calculation ('delta_fraction' | 'ratio_average').
+        
         Returns:
-            A list of differentially expressed genes
-
-        Raises:
-            BadRequestError: If both top_n and feature are specified
+            pd.DataFrame: A DataFrame containing differential gene expression.
         """
         return _fetch_differential_gene_expression(
             self,
-            differential_axis,
-            disease,
-            cell_type,
-            tissue,
-            sex,
-            development_stage,
-            top_n,
-            feature,
-            method,
-            unique_ids,
+            differential_axis=differential_axis,
+            disease=disease,
+            cell_type=cell_type,
+            tissue=tissue,
+            sex=sex,
+            development_stage=development_stage,
+            top_n=top_n,
+            feature=feature,
+            method=method,
         )
         
     def highest_measurement(
         self,
         feature: str =  None,
         number : int = None,
-    ):
+    )-> pd.DataFrame:
         """
         Get the highest measurement of a specific feature.
 
@@ -196,29 +174,46 @@ class API:
         Returns:
             pd.DataFrame: A DataFrame containing the highest measurements.
         """
-        return _fetch_highest_measurement(self, feature, number)
+        return _fetch_highest_measurement(self, feature=feature, number=number)
 
     def average(
         self,
-        features: str,
+        features: str = None,
         disease: str = None,
         cell_type: str = None,
         tissue: str = None,
         sex: str = None,
         development_stage: str = None,
-    ):
+        unique_ids: str = None,
+        include_normal: bool = False
+    ) -> pd.DataFrame:
         """
-        Get the average expression of a/a list of given genes
+        Get the average expression of given genes.
 
         Args:
-            features (str): The feature (gene) to query.
-            disease (str): The disease or disease keyword to filter the data
-            cell_type (str): Filter by cell type (optional)
-            tissue (str): Filter by tissue (optional)
-            sex (str): Filter by sex (optional)
-            development_stage (str): Filter by development stage (optional)
+            features (str]): The features (genes) to query.
+            disease (str): Filter by disease name.
+            cell_type (str): Filter by cell type.
+            tissue (str): Filter by tissue.
+            sex (str): Filter by sex.
+            development_stage (str): Filter by development stage.
+            unique_ids (str): Filter by unique_ids from metadata.
+            include_normal (bool): Include normal condition when querying a disease.
+
+        Returns:
+            pd.DataFrame: A DataFrame containing the average expression.
         """
-        return _fetch_average(self, features, disease, cell_type, tissue, sex, development_stage)
+        return _fetch_average(
+            self,
+            features=features,
+            disease=disease,
+            cell_type=cell_type,
+            tissue=tissue,
+            sex=sex,
+            development_stage=development_stage,
+            unique_ids=unique_ids,
+            include_normal=include_normal
+        )
     
     def fraction_detected(
         self,
@@ -228,20 +223,37 @@ class API:
         tissue: str = None,
         sex: str = None,
         development_stage: str = None,
-    ):
+        unique_ids: str = None,
+        include_normal: bool = False
+    ) -> pd.DataFrame:
         """
-        Get the fraction of a/a list of given genes
+        Get the fraction of a given gene detected in datasets.
 
         Args:
-            features (str): The feature (gene) to query.
-            disease (str): The disease or disease keyword to filter the data
-            cell_type (str): Filter by cell type (optional)
-            tissue (str): Filter by tissue (optional)
-            sex (str): Filter by sex (optional)
-            development_stage (str): Filter by development stage (optional)
+            features (str]): The features (genes) to query.
+            disease (str): Filter by disease name.
+            cell_type (str): Filter by cell type.
+            tissue (str): Filter by tissue.
+            sex (str): Filter by sex.
+            development_stage (str): Filter by development stage.
+            unique_ids (str]): Filter by unique_ids from metadata.
+            include_normal (bool): Include normal condition when querying a disease.
+
+        Returns:
+            pd.DataFrame: A DataFrame containing the fraction detected.
         """
-        return _fetch_fraction_detected(self, features, disease, cell_type, tissue, sex, development_stage)
-    
+        return _fetch_fraction_detected(
+            self,
+            features=features,
+            disease=disease,
+            cell_type=cell_type,
+            tissue=tissue,
+            sex=sex,
+            development_stage=development_stage,
+            unique_ids=unique_ids,
+            include_normal=include_normal
+        )
+        
     def dotplot(
         self,
         features: str,
@@ -250,17 +262,33 @@ class API:
         tissue: str = None,
         sex: str = None,
         development_stage: str = None,
-    ):
+        unique_ids: str = None,
+        include_normal: bool = False
+    ) -> pd.DataFrame:
         """
-        Prepare data for a dotplot, including average expression and fraction detected, 
-        for the specified features.
-        
+        Prepare data for a dotplot including average expression and fraction detected.
+
         Args:
-            features (str): The feature (gene) to query.
-            disease (str): The disease or disease keyword to filter the data
-            cell_type (str): Filter by cell type (optional)
-            tissue (str): Filter by tissue (optional)
-            sex (str): Filter by sex (optional)
-            development_stage (str): Filter by development stage (optional)
+            features (str): The features (genes) to query.
+            disease (str): Filter by disease name.
+            cell_type (str): Filter by cell type.
+            tissue (str): Filter by tissue.
+            sex (str): Filter by sex.
+            development_stage (str): Filter by development stage.
+            unique_ids (str): Filter by specific dataset IDs.
+            include_normal (bool): Include normal condition when querying a disease.
+
+        Returns:
+            pd.DataFrame: A DataFrame containing dotplot data.
         """
-        return _fetch_dotplot(self, features, disease, cell_type, tissue, sex, development_stage)
+        return _fetch_dotplot(
+            self,
+            features=features,
+            disease=disease,
+            cell_type=cell_type,
+            tissue=tissue,
+            sex=sex,
+            development_stage=development_stage,
+            unique_ids=unique_ids,
+            include_normal=include_normal
+        )
