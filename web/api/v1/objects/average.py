@@ -20,16 +20,21 @@ class Average(Resource):
     """
     API Resource class to handle requests for the average measurement
     of select features (gene) across multiple all diseases and their datasets.
+    
+    
+    Optional Query Parameters:
+    - `include_normal` (boolean, default=False): If `true`, includes the corresponding normal condition 
+      when querying a disease. Only applicable when `disease` is provided.
     """
 
     @model_exceptions
     @required_parameters("features")
     def post(self):
         args = request.args
-
-        groupby = get_groupby_args(args, ["tissue", "disease"])
-        feature_string = args.get("features", type=str)
-        features = clean_feature_string(feature_string)
+        
+        # Optional argument to include the average expression of the normal condition.
+        # This is only applicable when a disease condition is specified by the user.       
+        include_normal = args.get("include_normal", "").lower() == "true"
 
         filters = get_filter_kwargs(
             args,
@@ -43,9 +48,14 @@ class Average(Resource):
             ],
         )
 
+        groupby = get_groupby_args(args, ["tissue", "disease"])
+        feature_string = args.get("features", type=str)
+        features = clean_feature_string(feature_string)
+        
         result = get_average(
             features,
             groupby=groupby,
+            include_normal=include_normal,
             **filters,
         )
         result = result.to_dict(orient="records")
