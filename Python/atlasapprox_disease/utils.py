@@ -1,8 +1,5 @@
 import pandas as pd
 import requests
-from typing import Union, List
-
-from .exceptions import raiseExceptions
 
 def _fetch_metadata(api, **kwargs):
     """
