@@ -120,6 +120,7 @@ def _fetch_dotplot(api, **kwargs):
     Returns:
         A DataFrame containing dotplot data.
     """
+        
     response = requests.post(
         api.baseurl + "dotplot",
         params=kwargs

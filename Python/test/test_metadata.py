@@ -8,8 +8,7 @@ class TestMetadata(unittest.TestCase):
         """
         Set up the API instance before each test.
         """
-        # os.environ["ATLASAPPROX_DISEASE_BASEURL"] = "http://127.0.0.1:5000/v1/"
-        self.api = aad.API()  # Initialize the API instance
+        self.api = aad.API()
 
     def test_metadata_monocyte_lung(self):
         """
@@ -19,7 +18,6 @@ class TestMetadata(unittest.TestCase):
         self.assertIsInstance(result, pd.DataFrame)
         self.assertGreater(len(result), 0, "Metadata query returned empty DataFrame.")
 
-        # Assert that all cell types contain 'monocyte'
         self.assertTrue(
             result["cell_type"].str.contains("monocyte", case=False, na=False).all(),
             "Not all cell types contain 'monocyte' in the result."
@@ -33,7 +31,6 @@ class TestMetadata(unittest.TestCase):
         self.assertIsInstance(result, pd.DataFrame)
         self.assertGreater(len(result), 0, "Metadata query returned empty DataFrame.")
 
-        # Assert that all sex values are 'female'
         self.assertTrue(
             (result["sex"].str.lower() == "female").all(),
             "Not all results have 'female' as the sex."
@@ -47,7 +44,6 @@ class TestMetadata(unittest.TestCase):
         self.assertIsInstance(result, pd.DataFrame)
         self.assertGreater(len(result), 0, "Metadata query returned empty DataFrame.")
 
-        # Validate filtering correctness
         for _, row in result.iterrows():
             self.assertIn("kidney", row["disease"].lower())
             self.assertIn("epithelial", row["cell_type"].lower())

@@ -6,6 +6,9 @@ atlasapprox_disease_api_env
 secret_key.txt
 web/static/atlas_data
 
+# api example cases
+Python/Tutorials/api_example_cases.py
+
 
 documentation/
 __pycache__/

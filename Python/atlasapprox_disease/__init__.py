@@ -88,7 +88,7 @@ class API:
 
     def differential_cell_type_abundance(
         self,
-        differential_axis: str = "disease",
+        differential_axis: str = None,
         disease: str = None,
         cell_type: str = None,
         tissue: str = None,
@@ -120,15 +120,15 @@ class API:
 
     def differential_gene_expression(
         self,
-        differential_axis: str = "disease",
+        differential_axis: str = None,
         disease: str = None,
         cell_type: str = None,
         tissue: str = None,
         sex: str = None,
         development_stage: str = None,
-        top_n: int = 10,
+        top_n: int = None,
         feature: str = None,
-        method: str = "delta_fraction",
+        method: str = None,
     ) -> pd.DataFrame:
         """Get differential gene expression between two conditions.
 
@@ -185,7 +185,7 @@ class API:
         sex: str = None,
         development_stage: str = None,
         unique_ids: str = None,
-        include_normal: bool = False
+        include_normal: bool = None
     ) -> pd.DataFrame:
         """
         Get the average expression of given genes.
@@ -224,7 +224,7 @@ class API:
         sex: str = None,
         development_stage: str = None,
         unique_ids: str = None,
-        include_normal: bool = False
+        include_normal: bool = None
     ) -> pd.DataFrame:
         """
         Get the fraction of a given gene detected in datasets.
@@ -263,7 +263,7 @@ class API:
         sex: str = None,
         development_stage: str = None,
         unique_ids: str = None,
-        include_normal: bool = False
+        include_normal: bool = None
     ) -> pd.DataFrame:
         """
         Prepare data for a dotplot including average expression and fraction detected.
