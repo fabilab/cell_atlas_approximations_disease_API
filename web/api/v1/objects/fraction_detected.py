@@ -30,6 +30,8 @@ class FractionDetected(Resource):
         groupby = get_groupby_args(args, ["tissue", "disease"])
         feature_string = args.get("features", type=str)
         features = clean_feature_string(feature_string)
+        
+        include_normal = args.get("include_normal", "").lower() == "true"
 
         filters = get_filter_kwargs(
             args,
@@ -46,6 +48,7 @@ class FractionDetected(Resource):
         result = get_fraction_detected(
             features,
             groupby=groupby,
+            include_normal=include_normal,
             **filters,
         )
         result = result.to_dict(orient="records")
