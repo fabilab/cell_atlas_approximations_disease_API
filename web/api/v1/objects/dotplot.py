@@ -31,6 +31,8 @@ class DotPlot(Resource):
         feature_string = args.get("features", type=str)
         features = clean_feature_string(feature_string)
 
+        include_normal = args.get("include_normal", "").lower() == "true"
+        
         filters = get_filter_kwargs(
             args,
             [
@@ -46,6 +48,7 @@ class DotPlot(Resource):
         result = get_dotplot(
             features=features,
             groupby=groupby,
+            include_normal=include_normal,
             **filters,
         )
 
