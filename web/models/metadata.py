@@ -14,8 +14,9 @@ from models.exceptions import (
 
 metadata = None
 
+
 def generate_unique_id(row):
-    """Gnerate SA256 hash for a given row"""
+    """Gnerate SHA256 hash for a given row"""
     row_string = ",".join(map(str, row))  # Convert row values to a single string
     m = hashlib.md5()
     m.update(row_string.encode("utf-8"))  # Update the hash with encoded row string
@@ -28,7 +29,9 @@ def load_metadata():
     metadata = obs
     
     # Add unique_id column to metadata. Generate unique_id ONCE when starting the server and store it
-    obs["unique_id"] = obs.apply(generate_unique_id, axis=1)
+    # If already stored, do not touch
+    if "unique_id" not in obs.columns:
+        obs["unique_id"] = obs.apply(generate_unique_id, axis=1)
 
 
 def get_metadata(**filters):

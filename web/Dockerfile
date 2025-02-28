@@ -21,8 +21,8 @@ RUN pip install -r requirements.txt
 ADD static static
 
 # Create and copy manifest
-COPY create_manifest.py .
-RUN python create_manifest.py
+COPY build_metadata_file.py .
+RUN python build_metadata_file.py
 
 # Modules for backend
 ADD api api

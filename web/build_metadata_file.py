@@ -1,3 +1,6 @@
+"""
+Create the obs database file with the metadata of all datasets.
+"""
 import os
 import sys
 import glob
@@ -5,6 +8,15 @@ import pathlib
 import h5py
 import hdf5plugin
 import pandas as pd
+import hashlib
+
+
+def generate_unique_id(row):
+    """Gnerate SHA256 hash for a given row"""
+    row_string = ",".join(map(str, row))  # Convert row values to a single string
+    m = hashlib.md5()
+    m.update(row_string.encode("utf-8"))  # Update the hash with encoded row string
+    return m.hexdigest() 
 
 
 if __name__ == "__main__":
@@ -40,5 +52,7 @@ if __name__ == "__main__":
                 result.append(res)
     result = pd.concat(result)
     result.reset_index(drop=True, inplace=True)
+
+    result["unique_id"] = result.apply(generate_unique_id, axis=1)
 
     result.to_csv(data_folder / "approximation_obs.csv", index=False)

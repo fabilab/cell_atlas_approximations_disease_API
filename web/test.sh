@@ -32,7 +32,7 @@ if [ x$UPDATE = x1 ]; then
 fi
 
 # Create manifest file
-${VENV_DIR}/bin/python create_manifest.py
+${VENV_DIR}/bin/python build_metadata_file.py
 
 if [ x$CERT = x1 ]; then
 	if [ x$VERBOSE = x1 ]; then
