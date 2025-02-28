@@ -1,6 +1,6 @@
 {
     "atlasapprox-disease-container": {
-        "image": ":atlasapprox-disease-service.atlasapprox-disease.80",
+        "image": ":atlasapprox-disease-service.atlasapprox-disease.83",
         "ports": {
             "5000": "HTTP"
         }

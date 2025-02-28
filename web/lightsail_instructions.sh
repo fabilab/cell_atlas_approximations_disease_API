@@ -14,8 +14,9 @@ aws lightsail get-container-services --service-name atlasapprox-disease-service
 sudo systemctl start docker
 # Make new image (user should be in docker group)
 docker build -t atlasapprox-disease .
-# Test the image
+# Test the image, either one of the following (FIXME:: check which one works based on app.py settings)
 docker run -p 5000:5000 atlasapprox-disease
+docker run --network host atlasapprox-disease
 
 # Push locally built image to service
 aws lightsail push-container-image --service-name atlasapprox-disease-service --label atlasapprox-disease --image atlasapprox-disease
