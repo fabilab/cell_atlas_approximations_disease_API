@@ -6,6 +6,9 @@ atlasapprox_disease_api_env
 secret_key.txt
 web/static/atlas_data
 
+# api example cases
+Python/Tutorials/api_example_cases.py
+
 
 documentation/
 __pycache__/
@@ -17,3 +20,25 @@ __pycache__/
 .dockerignore
 
 .gcloudignore
+
+# Distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+pip-wheel-metadata/
+share/python-wheels/
+*.egg-info/
+*.egg-info
+.installed.cfg
+*.egg
+MANIFEST

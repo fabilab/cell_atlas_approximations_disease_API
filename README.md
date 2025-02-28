@@ -1,6 +1,3 @@
-[![PyPI version](https://badge.fury.io/py/atlasapprox-disease.svg)](https://badge.fury.io/py/atlasapprox-disease)
-[![npm version](https://badge.fury.io/js/atlasapprox-disease.svg)](https://badge.fury.io/js/atlasapprox-disease)
-
 <img src="https://raw.githubusercontent.com/fabilab/cell_atlas_approximations/main/figures/figure_disease_API.png" width="150" height="150">
 
 # Cell Atlas Approximations - Disease API
@@ -21,10 +18,10 @@ Currently implemented:
 
 ## Python package
 
-At the moment, the preferred way to access this API is through our Python package [atlasapprox-disease](https://test.pypi.org/project/atlasapprox-disease/):
+At the moment, the preferred way to access this API is through our Python package [atlasapprox_disease](https://test.pypi.org/project/atlasapprox_disease/):
 
 ```bash
-pip install atlasapprox-diseases
+pip install atlasapprox_disease
 ```
 
 For detailed examples and tutorials, please check the `tutorials` folder.
