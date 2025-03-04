@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "atlasapprox_disease"
 dynamic = ["version"]
-requires-python = ">= 3.8"
+requires-python = ">= 3.10"
 dependencies = [
   "requests",
   "numpy",
@@ -36,6 +36,8 @@ classifiers = [
   "Programming Language :: Python :: 3.9",
   "Programming Language :: Python :: 3.10",
   "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
   "Programming Language :: Python :: 3 :: Only",
   "Topic :: Scientific/Engineering",
   "Topic :: Scientific/Engineering :: Bio-Informatics",
@@ -46,6 +48,9 @@ classifiers = [
 
 Repository = "https://github.com/fabilab/cell_atlas_approximations_disease_API"
 "Bug Tracker" = "https://github.com/fabilab/cell_atlas_approximations_disease_API/issues"
+
+[tool.setuptools.packages]
+find = { include = ["atlasapprox_disease*"], exclude = ["tutorials"] }
 
 [tool.setuptools.dynamic]
 version = {attr = "atlasapprox_disease.__version__"}
