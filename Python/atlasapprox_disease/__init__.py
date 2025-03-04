@@ -17,7 +17,7 @@ from atlasapprox_disease.utils import (
     _fetch_dotplot,
 )
 
-__version__ = "0.0.1"
+__version__ = "0.1.4"
 
 __all__ = (
     "api_version",
