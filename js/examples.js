@@ -114,7 +114,7 @@ async function testDotplot() {
     // await testDifferentialGeneExpression();
     // await testHighestMeasurement();
     // await testAverage();
-    await testAverageUniqueId();
+    // await testAverageUniqueId();
     // await testFractionDetected();
     // await testDotplot();
 })();

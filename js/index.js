@@ -1,6 +1,6 @@
 const api_version = "v1";
-// const api_uri_default = "https://api-disease.atlasapprox.org/" + api_version + "/";
-const api_uri_default = "http://127.0.0.1:5000/" + api_version + "/";  // Local API
+const api_uri_default = "https://api-disease.atlasapprox.org/" + api_version + "/";
+// const api_uri_default = "http://127.0.0.1:5000/" + api_version + "/";  // Local API
 let api_uri = api_uri_default;
 
 const setAPIURI = (uri) => {
@@ -26,6 +26,7 @@ async function _callEndpoint(endpoint, params = {}, method = "GET") {
   if (uriSuffix !== "") uri += "?" + uriSuffix;
 
   let response = await fetch(uri, options);
+
   const data = await response.json();
 
   if (!response.ok) {
