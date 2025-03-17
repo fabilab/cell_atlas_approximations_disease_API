@@ -107,9 +107,18 @@ async function testDotplot() {
     }
 }
 
+async function testD() {
+    try {
+        let response = await atlasapprox_disease.dotplot({ features: "IL6, COL1A1, CD9", cell_type: "CD4" });
+        console.log(response);
+    } catch (error) {
+        console.error("API Error:", error);
+    }
+}
+
 // Run all test cases
 (async () => {
-    await testMetadata();
+    // await testMetadata();
     // await testDifferentialCellTypeAbundance();
     // await testDifferentialGeneExpression();
     // await testHighestMeasurement();
@@ -117,4 +126,5 @@ async function testDotplot() {
     // await testAverageUniqueId();
     // await testFractionDetected();
     // await testDotplot();
+    await testD();
 })();

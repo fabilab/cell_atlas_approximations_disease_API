@@ -9,6 +9,11 @@ web/static/atlas_data
 # api example cases
 Python/Tutorials/api_example_cases.py
 
+# Node stuff
+node_modules
+
+# js package
+*.tgz
 
 documentation/
 __pycache__/

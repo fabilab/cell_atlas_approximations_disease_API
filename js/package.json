@@ -1,5 +1,5 @@
 {
-  "name": "atlasapprox_disease",
+  "name": "atlasapprox-disease",
   "version": "0.1.0",
   "description": "Javascript APIs for disease cell atlas approximation",
   "main": "index.js",
@@ -22,5 +22,8 @@
   "license": "MIT",
   "bugs": {
     "url": "https://github.com/fabilab/cell_atlas_approximations_disease_API/issues"
+  },
+  "dependencies": {
+    "atlasapprox-disease": "^0.1.0"
   }
 }
