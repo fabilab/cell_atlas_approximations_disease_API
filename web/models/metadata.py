@@ -1,3 +1,4 @@
+import re
 import numpy as np
 import pandas as pd
 import hashlib
@@ -52,6 +53,17 @@ def get_metadata(**filters):
         if key == "sex":
             # "male" is a substring of "female"
             keep_key = metadata[key] == value
+        elif key == "cell_type":
+            value = value.strip()
+            # If the cell_type contains a space (e.g., 't cell'), use strict matching to ensure it's a standalone term
+            # e.g., 'goblet cell' and 'mast cell' shouldn't be included as a type of 't cell'
+            if " " in value:
+                value = rf"(?i)(?<!\w){value}(?!\w)"
+            # If the cell_type is a single word (e.g., 'neuron'), match as a suffix to include subtypes like 'interneuron'
+            # but ensure the word is not preceded by letters to avoid false positives
+            else:
+                value = rf"(?i)(?<!\w)(?:\w*{value})(?!\w)"
+            keep_key = metadata[key].str.contains(value, na=False, regex=True)
         else:
             keep_key = metadata[key].str.contains(value, case=False)
 
@@ -68,11 +80,17 @@ def get_metadata(**filters):
             disease=filters["disease"]
         )
 
-    if "cell_type" in filters and metadata["cell_type"].str.contains(filters["cell_type"], case=False).sum() == 0:
-        raise CellTypeNotFoundError(
-            msg=f"No cell type found that matches '{filters['cell_type']}'.",
-            cell_type=filters["cell_type"]
-        )
+    if "cell_type" in filters:
+        value = filters["cell_type"].strip()
+        if " " in value:
+            value = rf"(?i)(?<!\w){value}(?!\w)"
+        else:
+            value = rf"(?i)(?<!\w)(?:\w*{value})(?!\w)"
+        if metadata["cell_type"].str.contains(value, na=False, regex=True).sum() == 0:
+            raise CellTypeNotFoundError(
+                msg=f"No cell type found that matches '{filters['cell_type']}'.",
+                cell_type=filters["cell_type"]
+            )
         
     if "tissue" in filters and metadata["tissue"].str.contains(filters["tissue"], case=False).sum() == 0:
         raise TissueNotFoundError(

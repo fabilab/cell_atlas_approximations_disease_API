@@ -44,7 +44,6 @@ def get_diff_cell_abundance(
         # Check if both focal group and baseline are present in the dataset
         differential_states = obs[differential_axis].unique()
         if baseline not in differential_states or len(differential_states) < 2:
-        # if len(differential_states) < 2:
             continue
 
         table = (
@@ -77,6 +76,9 @@ def get_diff_cell_abundance(
             table_state[differential_axis] = state
             table_state["baseline"] = baseline
             table_state.reset_index(inplace=True)
+            # Filter out rows where ncell_disease is 0 to exclude cell types not in the disease state,
+            # avoiding clutter from baseline-only or other diseases within the same dataset.
+            table_state = table_state[table_state[f"ncell_{differential_axis}"] > 0]
             result.append(table_state)
 
     result = pd.concat(result)
