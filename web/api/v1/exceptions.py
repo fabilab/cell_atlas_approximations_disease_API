@@ -172,4 +172,13 @@ def model_exceptions(func):
                     "invalid_param_names": exc.invalid_param_names,
                 },
             )
+            
+        except Exception as exc:
+                    return {
+                        "message": str(exc),
+                        "error": {
+                            "type": "internal_error",
+                            "details": str(exc)
+                        }
+                    }, 500  # HTTP 500 Internal Server Error
     return inner
