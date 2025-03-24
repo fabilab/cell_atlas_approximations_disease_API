@@ -81,6 +81,8 @@ def get_diff_expression(
             .unstack(differential_axis, fill_value=0)
         )
         cell_types_to_keep = table.index.get_level_values('cell_type').unique().tolist()
+        tissues_to_keep = table.index.get_level_values('tissue_general').unique().tolist()
+        
         table["dataset_id"] = dataset_id
 
         # All the entries in obs are guaranteed to have nonzero cells for both normal and disease
@@ -90,10 +92,10 @@ def get_diff_expression(
             groupby=groupby + [differential_axis],
         )
         
-        # In the previous code, the calculation is perform without filtering cell type provided by the user,
-        # There we  
-        mask = adata.obs['cell_type'].isin(cell_types_to_keep)
-    
+        # Filter by both cell_type and tissue_general to ensure only matching data is included
+        mask = (adata.obs['cell_type'].isin(cell_types_to_keep) & 
+            adata.obs['tissue_general'].isin(tissues_to_keep))
+
         filtered_adata = adata[mask].copy()
 
         if feature is not None:

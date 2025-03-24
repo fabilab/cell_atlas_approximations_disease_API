@@ -4,7 +4,7 @@ from flask_restful import Resource
 from models.metadata import get_metadata
 
 from api.v1.exceptions import model_exceptions
-from api.v1.utils import get_filter_kwargs
+from api.v1.utils import get_filter_kwargs, validate_param_names
 
 
 class Metadata(Resource):
@@ -20,6 +20,17 @@ class Metadata(Resource):
     def get(self):
         args = request.args
 
+        # Validate query parameter names to catch typos like "cell_type --> cell_typp"
+        allowed_param_names = {
+            "disease",
+            "cell_type",
+            "tissue",
+            "sex",
+            "development_stage",
+        }
+        
+        validate_param_names(args, allowed_param_names)
+        
         filters = get_filter_kwargs(
             args,
             [

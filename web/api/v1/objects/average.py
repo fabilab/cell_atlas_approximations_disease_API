@@ -8,6 +8,7 @@ from models import (
 from api.v1.utils import (
     clean_feature_string,
     get_filter_kwargs,
+    validate_param_names,
 )
 from api.v1.exceptions import (
     model_exceptions,
@@ -20,11 +21,6 @@ class Average(Resource):
     """
     API Resource class to handle requests for the average measurement
     of select features (gene) across multiple all diseases and their datasets.
-    
-    
-    Optional Query Parameters:
-    - `include_normal` (boolean, default=False): If `true`, includes the corresponding normal condition 
-      when querying a disease. Only applicable when `disease` is provided.
     """
 
     @model_exceptions
@@ -32,9 +28,27 @@ class Average(Resource):
     def post(self):
         args = request.args
         
+        groupby = get_groupby_args(args, ["tissue", "disease"])
+        feature_string = args.get("features", type=str)
+        features = clean_feature_string(feature_string)
+        
         # Optional argument to include the average expression of the normal condition.
         # This is only applicable when a disease condition is specified by the user.       
         include_normal = args.get("include_normal", "").lower() == "true"
+
+        # Validate query parameter names to catch typos like "cell_type --> cell_typp"
+        allowed_param_names = {
+            "features",
+            "disease",
+            "cell_type",
+            "tissue",
+            "sex",
+            "development_stage",
+            "unique_ids",
+            "include_normal",
+        }
+
+        validate_param_names(args, allowed_param_names)
 
         filters = get_filter_kwargs(
             args,
@@ -47,10 +61,6 @@ class Average(Resource):
                 "unique_ids",
             ],
         )
-
-        groupby = get_groupby_args(args, ["tissue", "disease"])
-        feature_string = args.get("features", type=str)
-        features = clean_feature_string(feature_string)
         
         result = get_average(
             features,
