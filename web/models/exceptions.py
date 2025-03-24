@@ -47,3 +47,8 @@ class UniqueIdNotFoundError(KeyError):
         self.unique_ids = unique_ids
         super().__init__(self,msg)
  
+
+class InvalidParameterError(Exception):
+    def __init__(self, msg, invalid_param_names):
+        self.invalid_param_names = invalid_param_names
+        super().__init__(msg)

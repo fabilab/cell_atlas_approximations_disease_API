@@ -9,7 +9,7 @@ from api.v1.exceptions import (
     model_exceptions,
     required_parameters,
 )
-from api.v1.utils import get_groupby_args
+from api.v1.utils import get_groupby_args, validate_param_names
 
 
 class HighestMeasurement(Resource):
@@ -27,6 +27,14 @@ class HighestMeasurement(Resource):
         groupby = get_groupby_args(args, ["tissue", "disease"])
         feature = args.get("feature")
         number = args.get("number", default=10)
+        
+        # Validate query parameter names to catch typos like "feature --> feture"
+        allowed_param_names = {
+            "feature",
+            "number",
+        }
+
+        validate_param_names(args, allowed_param_names)
 
         # Get the top N highest expressors from all the expression results
         highest_measurement = get_highest_measurement(

@@ -11,7 +11,8 @@ from models.exceptions import (
     NoMatchingDatasetsError,
     NoContrastingConditionsInADatasetError,
     ParamsConflictError,
-    UniqueIdNotFoundError
+    UniqueIdNotFoundError,
+    InvalidParameterError
 )
 
 class FeatureStringFormatError(Exception):
@@ -161,13 +162,14 @@ def model_exceptions(func):
                     "invalid_value": exc.unique_ids,
                 },
             )
-            
-        except Exception as exc:
-            return {
-                "message": str(exc),
-                "error": {
-                    "type": "internal_error",
-                    "details": str(exc)
-                }
-            }, 500  # HTTP 500 Internal Server Error
+        except InvalidParameterError as exc:
+            abort(
+                400,
+                message=f"Invalid parameter name(s): {', '.join(exc.invalid_param_names)}. "
+                "Please check the spelling or refer to the documentation for valid parameter names.",
+                error={
+                    "type": "invalid_parameter_name",
+                    "invalid_param_names": exc.invalid_param_names,
+                },
+            )
     return inner

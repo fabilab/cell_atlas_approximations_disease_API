@@ -83,9 +83,6 @@ def get_diff_expression(
         cell_types_to_keep = table.index.get_level_values('cell_type').unique().tolist()
         tissues_to_keep = table.index.get_level_values('tissue_general').unique().tolist()
         
-        print(cell_types_to_keep)
-        print(tissues_to_keep)
-        
         table["dataset_id"] = dataset_id
 
         # All the entries in obs are guaranteed to have nonzero cells for both normal and disease
@@ -98,11 +95,7 @@ def get_diff_expression(
         # Filter by both cell_type and tissue_general to ensure only matching data is included
         mask = (adata.obs['cell_type'].isin(cell_types_to_keep) & 
             adata.obs['tissue_general'].isin(tissues_to_keep))
-    
-        print("dataset")
-        print(dataset_id)
-        print("masK;")
-        print(mask)
+
         filtered_adata = adata[mask].copy()
 
         if feature is not None:

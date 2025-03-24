@@ -5,6 +5,7 @@ from api.v1.exceptions import model_exceptions
 from api.v1.utils import (
     get_filter_kwargs,
     get_groupby_args,
+    validate_param_names,
 )
 
 from models import (
@@ -27,6 +28,19 @@ class DifferentialCellTypeAbundance(Resource):
 
         differential_axis = args.get("differential_axis", "disease", type=str)
         groupby = get_groupby_args(args, ["tissue_general"])
+        
+        # Validate query parameter names to catch typos like "cell_type --> cell_typp"
+        allowed_param_names = {
+            "differential_axis",
+            "disease",
+            "cell_type",
+            "tissue",
+            "sex",
+            "development_stage",
+        }
+
+        validate_param_names(args, allowed_param_names)
+
         filters = get_filter_kwargs(
             args,
             [

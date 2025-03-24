@@ -5,6 +5,7 @@ from models.exceptions import (
     NoContrastingConditionsInADatasetError,
     ParamsConflictError,
     UniqueIdNotFoundError,
+    InvalidParameterError,
 )
 
 # FIXME: there is a logical fallacy in allowing both unique_ids and metadta filters, deal with it at some point
@@ -102,3 +103,27 @@ def get_groupby_args(args, default=None):
 def clean_feature_string(featurestring):
     """Clean feature string."""
     return featurestring.replace(" ", "").split(",")
+
+
+def validate_param_names(args, allowed_param_names):
+    """
+    Validate query parameter names against a set of allowed names.
+    
+    Args:
+        args (dict): Dictionary of query parameters (e.g., request.args).
+        allowed_param_names (set): Set of allowed parameter names.
+    
+    Raises:
+        InvalidParameterError: If any parameter names are invalid.
+    """
+    # Convert args to a set of parameter names
+    provided_param_names = set(args.keys())
+    
+    # Find invalid parameter names
+    invalid_param_names = provided_param_names - allowed_param_names
+
+    if invalid_param_names:
+        raise InvalidParameterError(
+            msg=f"Invalid parameter name(s): {', '.join(invalid_param_names)}. Please check the spelling or refer to the documentation for valid parameter names.",
+            invalid_param_names=list(invalid_param_names)
+        )

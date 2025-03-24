@@ -8,6 +8,7 @@ from models import (
 from api.v1.utils import (
     clean_feature_string,
     get_filter_kwargs,
+    validate_param_names,
 )
 from api.v1.exceptions import (
     model_exceptions,
@@ -30,8 +31,20 @@ class FractionDetected(Resource):
         groupby = get_groupby_args(args, ["tissue", "disease"])
         feature_string = args.get("features", type=str)
         features = clean_feature_string(feature_string)
-        
         include_normal = args.get("include_normal", "").lower() == "true"
+        
+        allowed_param_names = {
+            "features",
+            "disease",
+            "cell_type",
+            "tissue",
+            "sex",
+            "development_stage",
+            "unique_ids",
+            "include_normal",
+        }
+
+        validate_param_names(args, allowed_param_names)
 
         filters = get_filter_kwargs(
             args,
