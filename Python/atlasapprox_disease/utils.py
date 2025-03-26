@@ -3,13 +3,7 @@ import requests
 
 def _fetch_metadata(api, **kwargs):
     """
-    Fetch metadata from the API.
-
-    Return:
-        A pandas.DataFrame with metadata that satisfy the filters
-    
-    Raises:
-        BadRequestError: If the API request fails.
+    Make a GET request to the /metadata endpoint to fetch metadata.
     """
     
     response = requests.get(
@@ -26,6 +20,7 @@ def _fetch_metadata(api, **kwargs):
 def _fetch_differential_cell_type_abundance(api, **kwargs):
     """
     Fetch differential cell type abundance data from the API.
+    Make a POST request to the /differential_cell_type_abundance endpoint to retrieve differential cell type abundance data between conditions.
 
     Returns:
         A pandas.DataFrame with the differential cell type abundance results.
