@@ -1,5 +1,5 @@
 REST
-====
+=======
 Cell atlas approximations (disease) are designed to be machine-readable and programming language-independent. This is achieved via a RESTful API.
 
 The current version of the RESTful API is **v1**.
@@ -19,6 +19,16 @@ Quick Start
              params=dict(disease='COVID'),
          )
          print(pd.DataFrame(response.json()))
+   
+   .. tab:: **JavaScript**
+
+      .. code-block:: JavaScript
+
+            let average = await atlasapprox_disease.avergae({
+               features="APOL1, MYH9, HNF1B",
+               disease="diabete",
+            });
+            console.log(average);
 
 Getting started
 ---------------

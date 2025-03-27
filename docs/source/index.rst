@@ -26,6 +26,7 @@ There are multiple ways to access atlas approximations programmatically:
 
    Python <python/index>
    REST (language-agnostic) <rest/index>
+   JavaScript <js/index>
 
 Authors
 -------
