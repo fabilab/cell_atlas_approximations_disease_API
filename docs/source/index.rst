@@ -27,10 +27,6 @@ There are multiple ways to access atlas approximations programmatically:
    Python <python/index>
    REST (language-agnostic) <rest/index>
 
-.. note::
-   The **REST API** is the primary interface and is fully functional.  
-   The **Python, R, and JavaScript interfaces are currently under development** and will be released soon.
-
 Authors
 -------
 This project is developed and maintained by:
