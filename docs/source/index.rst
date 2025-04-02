@@ -6,12 +6,11 @@
 API for disease cell atlas approximations
 ===============================================
 
-Cell Atlas Approximation (Disease) is a lightweight API designed for analyzing approximated single-cell transcriptomics data, using CellxGene Census as its initial data source.
-The API enables researchers to address complex biological questions across multiple organs, cell types, and disease conditions such as:
+Disease cell atlases are single-cell omics datasets that provide insights into diseased tissues across multiple organs and conditions. A disease `cell atlas approximation <https://chanzuckerberg.com/science/programs-resources/single-cell-biology/data-insights/light-and-scalable-statistical-approximations-of-cell-atlases>`_ is a lightweight, lossy compression of such a cell atlas, retaining key disease-specific information while reducing data size and complexity. This API, initially sourced from the CellxGene Census, enables researchers to explore cell type and gene expression data between disease states, sexes, and other conditions. It helps answer biological questions such as:
 
-- *What is the expression of a specific gene in a specific disease across all datasets?*
-- *In COVID-19, what is the differential cell abundance of each cell type between normal and disease states?*
-- *What are the top 20 most differentially expressed genes in kidney disease?*
+- *What cell types are present in blood samples from adult patients with influenza across all datasets?*
+- *How does the proportion of alveolar type 2 cells in the lung change between healthy individuals and those with COVID-19*
+- *What are the top 20 most differentially expressed genes in kidney-related disease?*
 
 Version
 -------
@@ -37,4 +36,10 @@ Affiliated with **[Fabilab](https://fabilab.org)**.
 
 Citation
 --------
-**Xu et al.** (2024) Lightweight and scalable approximations democratise access to single cell atlases. `biorxiv <https://www.biorxiv.org/content/10.1101/2024.01.03.573994v1>`_.
+
+- **Xu et al.** (2024). Lightweight and scalable approximations democratise access to single cell atlases. *bioRxiv*. `doi:10.1101/2024.01.03.573994 <https://www.biorxiv.org/content/10.1101/2024.01.03.573994v1>`_.
+
+Data sources
+-----------
+
+CZ CELLxGENE: Discover (Census). CZ CELLxGENE Discover: A single-cell data platform for scalable exploration, analysis and modeling of aggregated data CZI Single-Cell Biology, et al. bioRxiv 2023.10.30; doi: https://doi.org/10.1101/2023.10.30.563174

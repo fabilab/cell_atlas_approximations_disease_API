@@ -215,6 +215,11 @@ class API:
 
         Returns:
             A DataFrame containing average expression data for the specified features across conditions.
+        
+        Note:
+            If `unique_ids` is provided, it should only be used with the `features` parameter. Other metadata filters
+            (`disease`, `cell_type`, `tissue`, `sex`, `development_stage`) should not be specified, as the `unique_ids`
+            already encapsulate these metadata conditions. Using both will raise a `ParamsConflictError`.
         """
         return _fetch_average(
             self,
@@ -303,6 +308,7 @@ class API:
         Returns:
             A DataFrame containing dot plot data with average expression and fraction detected for the specified features.
         """
+
         return _fetch_dotplot(
             self,
             features=features,

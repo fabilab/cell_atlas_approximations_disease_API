@@ -1,0 +1,7 @@
+sphinx-tabs
+sphinx-rtd-theme
+sphinx-gallery
+matplotlib
+seaborn
+pandas
+requests

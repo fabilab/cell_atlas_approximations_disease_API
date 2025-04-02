@@ -32,12 +32,22 @@ and initialise the ``API`` object:
     
     api = aad.API()
 
-Here’s an example of querying metadata for datasets related to COVID-19:
+Here’s an example of querying metadata for datasets related to COVID-19 in lung tissue and then using the `unique_ids` to query average gene expression:
 
 .. code-block:: python
 
-    metadata = api.metadata(disease="covid")
+    # Step 1: Query metadata to get unique_ids
+    metadata = api.metadata(disease="covid", tissue="lung")
     print(metadata.head())
+
+    # Step 2: Use a unique_id to query average expression of specific genes
+    unique_id = metadata["unique_id"].iloc[0]  # Select the first unique_id
+    avg_expr = api.average(features="IGHG1,CXCL13,S100A8", unique_ids=unique_id)
+    print(avg_expr)
+
+.. note::
+
+   When using `unique_ids` in methods like `average`, `fraction_detected`, or `dotplot`, only specify the `features` parameter alongside it. Do not include other metadata filters (`disease`, `cell_type`, `tissue`, `sex`, `development_stage`), as `unique_ids` already encapsulate these conditions. Combining them will raise a `ParamsConflictError`.
 
 Reference API
 -------------

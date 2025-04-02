@@ -15,8 +15,8 @@ Quick Start
          import requests
          import pandas as pd
          response = requests.get(
-             'https://api-disease.atlasapprox.org/v1/metadata',
-             params=dict(disease='COVID'),
+            'https://api-disease.atlasapprox.org/v1/metadata',
+            params=dict(disease='COVID'),
          )
          print(pd.DataFrame(response.json()))
    
@@ -24,11 +24,13 @@ Quick Start
 
       .. code-block:: JavaScript
 
-            let average = await atlasapprox_disease.avergae({
-               features="APOL1, MYH9, HNF1B",
-               disease="diabete",
-            });
-            console.log(average);
+         var xmlHttp = new XMLHttpRequest();
+         xmlHttp.onreadystatechange = function() {
+            if (xmlHttp.readyState == 4 && xmlHttp.status == 200)
+               console.log(xmlHttp.responseText);
+         };
+         xmlHttp.open("GET", "https://api-disease.atlasapprox.org/v1/metadata?disease=covid&cell_type=alveolar", true);
+         xmlHttp.send(null)
 
 Getting started
 ---------------
@@ -62,7 +64,7 @@ Retrieve metadata records from the source database that match the specified filt
 - ``sex`` *(optional)* – Filter by sex.  
 - ``development_stage`` *(optional)* – Filter by developmental stage.
 
-**Returns: A dict with the following key-value pairs:**
+**Returns: A list of dictionaries, each containing the following key-value pairs:**
 
 - ``unique_ids`` – The unique id that is specific for this combination of returned data.  
 - ``dataset_id`` – Dataset ID of the where the cells come from.
@@ -98,7 +100,7 @@ Retrieve differential cell type abundance across conditions such as disease, tis
 - ``sex`` *(optional)* – Filter by sex.  
 - ``development_stage`` *(optional)* – Filter by developmental stage.  
 
-**Returns: A dict with the following key-value pairs:**  
+**Returns: A list of dictionaries, each containing the following key-value pairs:**  
 
 - ``dataset_id`` – Dataset ID of the cells that satisfies the filter conditions.
 - ``cell_type`` – The cell type for which the differential abundance is computed.  

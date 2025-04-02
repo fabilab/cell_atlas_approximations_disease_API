@@ -1,5 +1,5 @@
 JavaScript
-=========
+============
 
 The JavaScript interface can be used to access the atlasapprox-disease API from node.js or a web page.
 
@@ -8,12 +8,14 @@ Quick Start
 
 .. code-block:: javascript
 
+   const atlasapprox_disease = require('atlasapprox-disease');
    let average_expression;
-      (async () => {
-      average_expression = await atlasapprox_disease.average(
-         disease = "covid",
-         tisse = "lung",
-      );
+   (async () => {
+      average_expression = await atlasapprox_disease.average({
+         features: "ACE2,IL6,CCL2",
+         disease: "covid",
+         tissue: "lung"
+      });
       console.log(average_expression);
    })();
 
@@ -57,8 +59,7 @@ Retrieves metadata records from the atlasapprox-disease API. Each record represe
 
 **Returns**:
 
-A promise that resolves to an object containing the metadata records.
-
+A promise that resolves to a list (array) of objects, where each object represents a metadata record for a specific combination of dataset, cell type, tissue, disease, sex, and developmental stage, including a unique identifier and sample details.
 differential_cell_type_abundance
 ++++++++++++++++++++++++++++++++
 
@@ -77,7 +78,7 @@ Retrieves differential cell type abundance across conditions such as disease, ti
 
 **Returns**:
 
-A promise that resolves to an object containing the differential cell type abundance data.
+A promise that resolves to a list (array) of objects, where each object represents the differential abundance of a cell type between two conditions (e.g., disease vs. normal), including proportions and cell counts.
 
 differential_gene_expression
 ++++++++++++++++++++++++++++
@@ -100,7 +101,7 @@ Retrieves differentially expressed genes between a baseline condition and a spec
 
 **Returns**:
 
-A promise that resolves to an object containing the differential gene expression data.
+A promise that resolves to a list (array) of objects, where each object represents a differentially expressed gene for a specific cell type and condition, including expression levels and regulation direction.
 
 highest_measurement
 +++++++++++++++++++
@@ -116,7 +117,7 @@ Retrieves the top N cell types and tissue combinations with the highest expressi
 
 **Returns**:
 
-A promise that resolves to an object containing the highest measurement data, ordered by expression level.
+A promise that resolves to a list (array) of objects, where each object represents a cell type and tissue combination with high expression of the queried gene, sorted by expression level, including the average expression value.
 
 average
 +++++++
@@ -138,7 +139,11 @@ Retrieves the average expression levels of one or more selected features (e.g., 
 
 **Returns**:
 
-A promise that resolves to an object containing the average expression data.
+A promise that resolves to a list (array) of objects, where each object represents the average expression of the queried genes for a specific cell type, tissue, and disease condition, with each gene’s average expression as a key-value pair.
+
+.. note::
+
+   When using `unique_ids`, only specify the `features` parameter alongside it. Do not include other metadata filters (`disease`, `cell_type`, `tissue`, `sex`, `development_stage`), as `unique_ids` already encapsulate these conditions. Combining them will result in an error.
 
 fraction_detected
 +++++++++++++++++
@@ -160,7 +165,7 @@ Retrieves the fraction of cells in which a given gene is detected across differe
 
 **Returns**:
 
-A promise that resolves to an object containing the fraction detected data.
+A promise that resolves to a list (array) of objects, where each object represents the fraction of cells expressing the queried genes for a specific cell type, tissue, and disease condition, with each gene’s fraction as a key-value pair.
 
 dotplot
 +++++++
@@ -182,4 +187,4 @@ Retrieves both the average expression and fraction detected for a list of genes 
 
 **Returns**:
 
-A promise that resolves to an object containing the dot plot data.
+A promise that resolves to a list (array) of objects, where each object represents the average expression and fraction detected for the queried genes in a specific cell type, tissue, and disease condition, with each gene’s data as a nested object containing the feature name, fraction, and average expression.
