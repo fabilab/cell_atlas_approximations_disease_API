@@ -24,7 +24,8 @@ author = 'Ying Xu, Fabio Zanini'
 extensions = [
     "sphinx_tabs.tabs",
     'sphinx.ext.autodoc',
-    'sphinx.ext.napoleon'
+    'sphinx.ext.napoleon',
+    'sphinx_gallery.gen_gallery',
 ]
 sphinx_tabs_disable_tab_closing = True
 
@@ -42,20 +43,18 @@ exclude_patterns = []
 
 # -- Options for sphinx-gallery ----------------------------------------------
 sphinx_gallery_conf = {
-    "filename_pattern": "/.*.py",
-    "examples_dirs": [
-        "../gallery/python",
-    ],
-    "gallery_dirs": [
-        "python/gallery",
-    ],
+    'examples_dirs': 'python',  # Path to example scripts
+    'gallery_dirs': 'auto_examples',    # Output directory for generated gallery
+    'filename_pattern': '/plot_',       # Only execute files starting with 'plot_'
+    'ignore_pattern': r'__init__\.py',  # Ignore specific files
+    'download_all_examples': True,      # Allow downloading examples
 }
-
 # -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
 
 html_theme = "sphinx_rtd_theme"
-# html_static_path = ["_static"]
+html_static_path = ["_static"]
+html_css_files = ['css/custom.css']
 
 # -- Enable TODOs in documentation -------------------------------------------
 todo_include_todos = True

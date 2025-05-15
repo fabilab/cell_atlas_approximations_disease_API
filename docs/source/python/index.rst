@@ -12,7 +12,7 @@ You need the following Python packages:
 
 Installation
 ------------
-You can use `pip` to install the `atlasapprox-disease` package:
+You can use `pip` to install the `atlasapprox_disease` package:
 
 .. code-block:: bash
 
@@ -48,6 +48,15 @@ Here’s an example of querying metadata for datasets related to COVID-19 in lun
 .. note::
 
    When using `unique_ids` in methods like `average`, `fraction_detected`, or `dotplot`, only specify the `features` parameter alongside it. Do not include other metadata filters (`disease`, `cell_type`, `tissue`, `sex`, `development_stage`), as `unique_ids` already encapsulate these conditions. Combining them will raise a `ParamsConflictError`.
+
+Examples
+--------
+Explore practical examples of using the Python API to analyze disease-related single-cell data:
+
+.. toctree::
+   :maxdepth: 1
+
+   Python Examples <../auto_examples/index>
 
 Reference API
 -------------

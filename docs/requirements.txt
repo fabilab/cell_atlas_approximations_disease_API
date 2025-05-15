@@ -5,3 +5,4 @@ matplotlib
 seaborn
 pandas
 requests
+sphinx-new-tab-link

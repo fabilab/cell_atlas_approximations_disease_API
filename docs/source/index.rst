@@ -27,6 +27,15 @@ There are multiple ways to access atlas approximations programmatically:
    REST (language-agnostic) <rest/index>
    JavaScript <js/index>
 
+Examples
+--------
+Explore practical examples of using the API to analyze disease-related single-cell data:
+
+.. toctree::
+   :maxdepth: 1
+
+   Python Examples <auto_examples/index>
+
 Authors
 -------
 This project is developed and maintained by:
