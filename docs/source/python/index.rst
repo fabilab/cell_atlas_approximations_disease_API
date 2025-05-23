@@ -56,10 +56,13 @@ Explore practical examples of using the Python API to analyze disease-related si
 .. toctree::
    :maxdepth: 1
 
-   Python Examples <../auto_examples/index>
+   Example gallery <gallery/index>
 
 Reference API
 -------------
+
+Cell atlas approximations, Python API interface.
+
 .. autoclass:: atlasapprox_disease.API
    :members:
    :undoc-members:

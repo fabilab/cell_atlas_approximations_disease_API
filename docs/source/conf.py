@@ -43,12 +43,16 @@ exclude_patterns = []
 
 # -- Options for sphinx-gallery ----------------------------------------------
 sphinx_gallery_conf = {
-    'examples_dirs': 'python',  # Path to example scripts
-    'gallery_dirs': 'auto_examples',    # Output directory for generated gallery
-    'filename_pattern': '/plot_',       # Only execute files starting with 'plot_'
-    'ignore_pattern': r'__init__\.py',  # Ignore specific files
-    'download_all_examples': True,      # Allow downloading examples
+    "filename_pattern": "/.*.py",
+    "examples_dirs": [
+        "../gallery/python",
+    ],
+    "gallery_dirs": [
+        "python/gallery",
+    ],
+    "remove_config_comments": True, # hides config-style comments like thumbnail_path
 }
+
 # -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
 

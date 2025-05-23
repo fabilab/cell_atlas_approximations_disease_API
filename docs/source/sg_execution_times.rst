@@ -6,7 +6,7 @@
 
 Computation times
 =================
-**00:33.914** total execution time for 1 file **from all galleries**:
+**00:31.490** total execution time for 2 files **from all galleries**:
 
 .. container::
 
@@ -32,6 +32,9 @@ Computation times
    * - Example
      - Time
      - Mem (MB)
-   * - :ref:`sphx_glr_auto_examples_plot_beginner_guide.py` (``../gallery/python/plot_beginner_guide.py``)
-     - 00:33.914
+   * - :ref:`sphx_glr_python_gallery_beginner_guide.py` (``../gallery/python/beginner_guide.py``)
+     - 00:31.490
+     - 0.0
+   * - :ref:`sphx_glr_python_gallery_explore_differential_gene_exp.py` (``../gallery/python/explore_differential_gene_exp.py``)
+     - 00:00.000
      - 0.0

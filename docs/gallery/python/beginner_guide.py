@@ -9,7 +9,11 @@ Currently, it includes datasets from the CELLxGENE Census as its initial source,
 This API enables users to quickly explore cellular and gene expression patterns in disease contexts.
 
 Follow this tutorial to get started with the basics of using the API.
+
+# sphinx_gallery_thumbnail_path = '_static/beginner_guide.png'
+
 """
+
 
 # %%
 # Installation
