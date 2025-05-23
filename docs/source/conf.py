@@ -24,7 +24,8 @@ author = 'Ying Xu, Fabio Zanini'
 extensions = [
     "sphinx_tabs.tabs",
     'sphinx.ext.autodoc',
-    'sphinx.ext.napoleon'
+    'sphinx.ext.napoleon',
+    'sphinx_gallery.gen_gallery',
 ]
 sphinx_tabs_disable_tab_closing = True
 
@@ -49,13 +50,15 @@ sphinx_gallery_conf = {
     "gallery_dirs": [
         "python/gallery",
     ],
+    "remove_config_comments": True, # hides config-style comments like thumbnail_path
 }
 
 # -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
 
 html_theme = "sphinx_rtd_theme"
-# html_static_path = ["_static"]
+html_static_path = ["_static"]
+html_css_files = ['css/custom.css']
 
 # -- Enable TODOs in documentation -------------------------------------------
 todo_include_todos = True

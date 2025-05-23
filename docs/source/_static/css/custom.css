@@ -1,0 +1,65 @@
+/* ===== Tables ===== */
+table {
+    border-collapse: collapse !important;   /* merge borders */
+    max-width: 100% !important;
+    max-height: 400px !important;
+    display: block !important;  /* enable scroll bars */
+    overflow: auto !important;  /* x & y scrolling */
+    white-space: nowrap;    /* prevent cell wrap */
+}
+
+table th,
+table td {
+    border: 1px solid #ddd !important;
+    padding: 6px;
+    text-align: left;
+    font-size: 14px;
+    white-space: nowrap !important;
+}
+
+/* Header & zebra striping */
+table th {
+    background-color: #f1f1f1;
+    color: #333;
+    font-weight: bold;
+}
+
+table tr:nth-child(even) {
+    background-color: #f9f9f9;
+}
+
+/* ===== Script-output tables ===== */
+/* inherit general table rules plus these */
+.sphx-glr-script-out table {
+    border-collapse: collapse !important;
+    max-width: 100% !important;
+    max-height: 400px !important;
+    display: block !important;
+    overflow: auto !important;
+}
+
+.sphx-glr-script-out table th,
+.sphx-glr-script-out table td {
+    border: 1px solid #ddd !important;
+    padding: 6px !important;
+    text-align: left !important;
+    font-size: 14px !important;
+}
+
+.sphx-glr-script-out img {
+    max-width: 100% !important;
+    height: auto !important;    /* preserve aspect ratio */
+}
+
+/* Remove automatic height restriction */
+.sphx-glr-script-out {
+    overflow-x: auto !important;
+    max-height: none !important;
+}
+
+/* ===== Responsive docutils table wrapper ===== */
+.wy-table-responsive {
+    margin-bottom: 24px;
+    max-width: 100%;
+    overflow: visible;  /* allow internal scroll control */
+}

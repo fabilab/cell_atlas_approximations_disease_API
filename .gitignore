@@ -6,8 +6,6 @@ atlasapprox_disease_api_env
 secret_key.txt
 web/static/atlas_data
 
-# api example cases
-Python/Tutorials/api_example_cases.py
 
 # Node stuff
 node_modules
@@ -47,3 +45,7 @@ share/python-wheels/
 .installed.cfg
 *.egg
 MANIFEST
+
+# ignore Sphinx auto generated files
+docs/source/auto_examples/
+docs/source/python/gallery/
